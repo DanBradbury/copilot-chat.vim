@@ -21,17 +21,16 @@ let s:colors_gui = ['#33FF33', '#4DFF33', '#66FF33', '#80FF33', '#99FF33', '#B3F
 let s:colors_cterm = [46, 118, 154, 190, 226, 227, 228, 229, 230]
 let s:color_index = 0
 
-function! UserInputSeparator()
-  let l:width = winwidth(0)-2
-  let l:separator = ' '
-  let l:separator .= repeat('━', l:width)
-  call appendbufline(s:chat_buffer, '$', l:separator)
+def UserInputSeparator()
+  var width = winwidth(0) - 2
+  var separator = ' ' .. repeat('━', width)
+  call appendbufline(s:chat_buffer, '$', separator)
   call appendbufline(s:chat_buffer, '$', '')
-  let l:win_id = bufwinid(s:chat_buffer)
-  if l:win_id != -1
-    call win_execute(l:win_id, 'normal! G')
+  var win_id = bufwinid(s:chat_buffer)
+  if win_id != -1
+    call win_execute(win_id, 'normal! G')
   endif
-endfunction
+enddef
 
 function! LoadConfig()
   if !isdirectory(s:config_dir)
@@ -84,32 +83,10 @@ function! CopilotChat()
   setlocal buftype=nofile
   setlocal bufhidden=hide
   setlocal noswapfile
-  setlocal nonumber
-  setlocal norelativenumber
-  setlocal wrap
+  setlocal filetype=copilot-chat
   execute 'file CopilotChat-' . s:chat_count
   let s:chat_count += 1
   let s:chat_buffer = bufnr('%')
-
-  nnoremap <buffer> <leader>cs :SubmitChatMessage<CR>
-  nnoremap <buffer> <CR> :SubmitChatMessage<CR>
-
-  syntax match CopilotWelcome /^Welcome to Copilot Chat!.*$/
-  syntax match CopilotSeparatorIcon /^/
-  syntax match CopilotSeparatorIcon /^/
-  syntax match CopilotSeparatorLine / ━\+$/
-  syntax match CopilotWaiting /Waiting for response\.*$/
-  syntax match CopilotPrompt /^> .*/
-
-  highlight CopilotWaiting ctermfg=46 guifg=#33FF33
-  highlight CopilotWelcome ctermfg=205 guifg=#ff69b4
-  highlight CopilotSeparatorIcon ctermfg=45 guifg=#00d7ff
-  highlight CopilotSeparatorLine ctermfg=205 guifg=#ff69b4
-  highlight CopilotPrompt ctermfg=230 guifg=#FFFF33
-
-  if !exists('g:syntax_on')
-    syntax enable
-  endif
 
   call appendbufline(s:chat_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
   call UserInputSeparator()
