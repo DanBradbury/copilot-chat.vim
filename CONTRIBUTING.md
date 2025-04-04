@@ -17,11 +17,16 @@ git checkout -b my_new_branch
 4. Run `move.sh` to save changes to plugin location for testing
 
 ## Testing
-Tests are written with vader and include the necessary mocking in `mocks.vader` to avoid the need token generation
+Tests are written with vader and include the necessary mocking in `mocks.vader` to avoid the need for token generation
 
 ### Running tests
 ```
 vim '+Vader! test/*' && echo Success || echo Failure
+```
+or you can trigger the test suite by running
+
+```
+./test/run.sh
 ```
 
 ## Linting
