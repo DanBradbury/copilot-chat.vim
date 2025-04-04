@@ -1,0 +1,195 @@
+*copilot-chat.txt*  Copilot Chat inside of vim
+
+Author:  Dan Bradbury <https://danbradbury.net/>
+License: Same terms as Vim itself (see |license|)
+
+==============================================================================
+CONTENTS                                               *copilot-chat-contents*
+
+    1. Introduction ............................ |copilot-chat-introduction|
+    2. Requirements ............................ |copilot-chat-requirements|
+    3. Setup ................................... |copilot-chat-setup|
+    4. Commands ................................ |copilot-chat-commands|
+    5. Key Mappings ............................ |copilot-chat-mappings|
+    6. Features ................................ |copilot-chat-features|
+        6.1 Model Selection .................... |copilot-chat-models|
+        6.2 Add Selection to Chat .............. |copilot-chat-add-selection|
+        6.3 Prompt Templates ................... |copilot-chat-templates|
+    7. Configuration ........................... |copilot-chat-configuration|
+    8. Troubleshooting ......................... |copilot-chat-troubleshooting|
+
+==============================================================================
+1. Introduction                                     *copilot-chat-introduction*
+
+Copilot Chat for Vim provides GitHub Copilot chat functionality without having
+to leave Vim. This plugin is for Vim users who want to interact with GitHub
+Copilot's AI assistant directly from within their editor.
+
+==============================================================================
+2. Requirements                                     *copilot-chat-requirements*
+
+- Vim 9.0.0185 or newer
+- NerdFonts (optional for pretty icons)
+- GitHub account with Copilot access
+
+==============================================================================
+3. Setup                                                *copilot-chat-setup*
+
+1. Run |:CopilotChat| to open a chat window. You will be prompted to set up
+   your device on first use.
+
+2. Follow the authentication prompt:
+   - You'll be shown a URL to visit and a code to enter
+   - Visit the URL in your browser and enter the code
+   - Return to Vim and press Enter to continue
+
+3. Write your prompt under the line separator and press <Enter> in normal mode
+   or use |:SubmitChatMessage|
+
+4. You should see "Waiting for response.." in the buffer to indicate work is
+   being done in the background
+
+5. Enjoy your conversation with Copilot!
+
+==============================================================================
+4. Commands                                           *copilot-chat-commands*
+
+                                                              *:CopilotChat*
+:CopilotChat         Opens a new Copilot Chat window (default vsplit right)
+
+                                                        *:SubmitChatMessage*
+:SubmitChatMessage   Submits the current prompt to Copilot
+
+                                                           *:CopilotConfig*
+:CopilotConfig       Opens the 'config.json' file for modifying default
+                     settings when opening a new CopilotChat window
+
+                                                           *:CopilotModels*
+:CopilotModels       Views available models and allows selecting the active
+                     model for future chats
+
+                                                            *:SelectModel*
+:SelectModel         Selects the current line's model as the default model
+
+==============================================================================
+5. Key Mappings                                       *copilot-chat-mappings*
+
+Global mappings:
+    <Leader>cc       Opens a new chat window (normal mode)
+    <Leader>a        Adds the current visual selection to the active chat
+                     window inside a code block (visual mode)
+
+Buffer-specific mappings (in chat window):
+    <CR>             Submits current prompt (normal mode)
+    <Leader>cs       Submits current prompt (normal mode)
+
+Buffer-specific mappings (in models window):
+    <CR>             Selects the model on current line for future chat use
+
+These mappings can be customized by adding your own mappings in your vimrc.
+
+==============================================================================
+6. Features                                           *copilot-chat-features*
+
+------------------------------------------------------------------------------
+6.1 Model Selection                                   *copilot-chat-models*
+
+The plugin allows you to choose between different Copilot AI models:
+
+1. Use |:CopilotModels| to view available models
+2. Navigate to the model you want to use
+3. Press <Enter> to select it
+4. New chats will use the selected model
+
+The active model will be highlighted in the models list.
+
+------------------------------------------------------------------------------
+6.2 Add Selection to Chat                       *copilot-chat-add-selection*
+
+This feature allows you to quickly send code selections to your active Copilot
+Chat window:
+
+1. Select code in visual mode
+2. Press <Leader>a (default mapping)
+3. The selection will be added to the active chat window inside a codeblock
+   with the appropriate filetype
+
+This is useful for getting help, explanations, or suggestions about specific
+portions of your code.
+
+------------------------------------------------------------------------------
+6.3 Prompt Templates                               *copilot-chat-templates*
+
+Copilot Chat supports custom prompt templates that can be quickly accessed
+during chat sessions:
+
+Using templates:
+- In the chat window, start a line with `> TEMPLATE_NAME`
+- The template name will be automatically replaced with the full template
+  content before sending to Copilot
+- Example: `> explain` would expand to the full explanation template
+
+Managing templates:
+1. Open the config with |:CopilotConfig|
+2. Add templates to the "prompts" object in config.json:
+>
+    {
+      "model": "gpt-4",
+      "prompts": {
+        "explain": "Explain how this code works in detail:",
+        "refactor": "Suggest improvements and refactoring for this code:",
+        "docs": "Generate documentation for this code:"
+      }
+    }
+<
+
+Example usage:
+>
+    > explain
+
+    function validateUser() {
+      // code to validate
+    }
+<
+This will send the full template text + your code to Copilot.
+
+==============================================================================
+7. Configuration                                 *copilot-chat-configuration*
+
+The plugin stores configuration in `~/.vim/copilot-chat/config.json`.
+
+To modify the configuration:
+1. Run |:CopilotConfig| to open the configuration file
+2. Edit the configuration
+3. Save the file
+
+Configuration options:
+- `model`: The default AI model to use (e.g., "gpt-4o")
+- `prompts`: An object containing prompt templates
+
+Example configuration:
+>
+    {
+      "model": "gpt-4o",
+      "prompts": {
+        "explain": "Explain how this code works in detail:",
+        "refactor": "Suggest improvements and refactoring for this code:",
+        "docs": "Generate documentation for this code:"
+      }
+    }
+<
+
+==============================================================================
+8. Troubleshooting                             *copilot-chat-troubleshooting*
+
+Authentication issues:
+- If you encounter authentication problems, delete the token files:
+  `~/.vim/copilot-chat/.device_token` and `~/.vim/copilot-chat/.chat_token`
+- Run |:CopilotChat| again to trigger a new authentication
+
+Connection issues:
+- Ensure you have a working internet connection
+- Check that your GitHub account has access to GitHub Copilot
+
+If you continue to experience issues, please visit the GitHub repository:
+https://github.com/DanBradbury/copilot-chat.vim
