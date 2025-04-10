@@ -12,11 +12,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: ruby/setup-ruby@v1
         with:
-          python-version: '3.13'
-      - name: vint
+          ruby-version: '3.3' # Not needed with a .ruby-version, .tool-versions or mise.toml
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+      - name: vinter
         run: |
-          pip install vim-vint
-          pip install setuptools
-          vint .
+          gem install vinter
+          vinter plugin/copilot-chat.vim
