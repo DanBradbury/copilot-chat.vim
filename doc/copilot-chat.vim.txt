@@ -1,0 +1,100 @@
+================================================================================
+CONTENTS                                             *copilot-chat.vim-contents*
+
+    1.Introduction............................|CopilotChat|
+    2.Commands................................|CopilotChatFunctionality|
+    3.Key Mappings............................|CopilotChatKeyMappings|
+    4.Features................................|CopilotFeatures|
+        4.1 Model Selection...................|CopilotSelection|
+        4.3 Prompt Templates..................|CopilotPromptTemplates|
+        4.2 Add Selection to Chat.............|CopilotAddSelection|
+
+================================================================================
+
+
+================================================================================
+1. Introduction                                                    *CopilotChat*
+
+--------------------------------------------------------------------------------
+
+Enable GitHub Copilot chat within Vim.
+
+================================================================================
+
+================================================================================
+2. Commands                                           *CopilotChatFunctionality*
+
+--------------------------------------------------------------------------------
+
+:CopilotChat <input>                                              *:CopilotChat*
+    Launches a new Copilot chat with your input as the initial prompt.
+
+:CopilotChatOpen                                              *:CopilotChatOpen*
+    Opens a new Copilot chat window (default vsplit right).
+
+:CopilotChatReset                                            *:CopilotChatReset*
+    Resets the current chat window.
+
+:CopilotConfig                                                  *:CopilotConfig*
+    Open `config.json` for default settings when opening a new CopilotChat
+    window.
+
+:CopilotModels                                                  *:CopilotModels*
+    View available modes / select active model.
+
+:CopilotChatSave <name>                                       *:CopilotChatSave*
+    Save chat history (uses timestamp if no name provided).
+
+:CopilotChatLoad <name>                                       *:CopilotChatName*
+    Load chat history (shows list of saved histories if no name provided).
+
+:CopilotChatList                                              *:CopilotChatList*
+    List all saved chat histories.
+
+================================================================================
+
+================================================================================
+3. Key Mappings                                         *CopilotChatKeyMappings*
+
+--------------------------------------------------------------------------------
+
+Default~
+Mode       Key                Location
+    Description
+
+Normal.....<Leader>cc.........Global...........................................
+    Opens a new chat window `:CopilotChat`.
+Normal.....<CR>...............<buffer>.........................................
+    Submit current prompt.
+Normal.....<CR>...............:CopilotModels <buffer>..........................
+    Select the model on the current line for future chat use
+Visual.....<Leader>cc.........Global...........................................
+   Add the current selection to the active chat window inside a code block.
+
+================================================================================
+
+================================================================================
+4. Features                                                    *CopilotFeatures*
+
+--------------------------------------------------------------------------------
+
+4.1 Model Selection                                            *CopilotSelection*
+
+:CopilotModels brings up a buffer for of all the available models for you to
+choose from. Simply press <Enter> in normal mode on the model you would like
+to use. New chats will use the selected model.
+
+--------------------------------------------------------------------------------
+
+4.2 Add Selection to Chat                               *CopilotPromptTemplates*
+
+By default, this is configured to <Leader>a when in visual mode. Adds the
+selection to the active chat window inside of a &filetype named codeblock.
+
+--------------------------------------------------------------------------------
+
+4.3 Prompt Templates                                       *CopilotAddSelection*
+
+Copilot Chat supports custom prompt templates that can be quickly accessed
+during chat sessions. Templates allow you to save frequently used prompts
+and invoke them with a simple syntax.
