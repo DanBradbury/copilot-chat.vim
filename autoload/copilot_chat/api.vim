@@ -64,9 +64,9 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
   let l:width = winwidth(0)-2
   let l:separator = ' '
   let l:separator .= repeat('━', l:width)
-  call appendbufline(g:active_chat_buffer, '$', l:separator)
-  call appendbufline(g:active_chat_buffer, '$', split(l:result, "\n"))
-  call copilot_chat#buffer#add_input_separator(g:active_chat_buffer)
+  call copilot_chat#buffer#append_message(l:separator)
+  call copilot_chat#buffer#append_message(split(l:result, "\n"))
+  call copilot_chat#buffer#add_input_separator()
 endfunction
 
 function! copilot_chat#api#handle_job_error(channel, msg) abort

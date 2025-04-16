@@ -1,4 +1,0 @@
-Execute:
-  function! copilot_chat#auth#verify_signin()
-    return 1
-  endfunction

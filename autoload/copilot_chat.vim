@@ -8,6 +8,36 @@ function! copilot_chat#open_chat() abort
   normal! G
 endfunction
 
+function! copilot_chat#start_chat(message) abort
+  call copilot_chat#open_chat()
+  call copilot_chat#buffer#append_message(a:message)
+  call copilot_chat#api#async_request(a:message)
+endfunction
+
+function! copilot_chat#reset_chat() abort
+  if g:active_chat_buffer == -1 || !bufexists(g:active_chat_buffer)
+    echom 'No active chat window to reset'
+    return
+  endif
+
+  let l:current_buf = bufnr('%')
+  
+  " Switch to the active chat buffer if not already there
+  if l:current_buf != g:active_chat_buffer
+    execute 'buffer ' . g:active_chat_buffer
+  endif
+
+  silent! %delete _
+  
+  call copilot_chat#buffer#welcome_message()
+
+  normal! G
+
+  if l:current_buf != g:active_chat_buffer && bufexists(l:current_buf)
+    execute 'buffer ' . l:current_buf
+  endif
+endfunction
+
 function! copilot_chat#submit_message() abort
   let l:separator_line = search(' ━\+$', 'nw')
   let l:start_line = l:separator_line + 1

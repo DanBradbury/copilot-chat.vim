@@ -9,7 +9,7 @@ function! copilot_chat#buffer#create() abort
 
   " Create split based on position
   if l:position ==# 'right'
-    vsplit
+    rightbelow vsplit
   elseif l:position ==# 'left'
     leftabove vsplit
   elseif l:position ==# 'top'
@@ -30,26 +30,36 @@ function! copilot_chat#buffer#create() abort
   let s:chat_count += 1
 
   " Save buffer number for reference
-  let s:current_chat_buffer = bufnr('%')
-  call appendbufline(s:current_chat_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
-  call copilot_chat#buffer#add_input_separator(s:current_chat_buffer)
-  return s:current_chat_buffer
+  let g:active_chat_buffer = bufnr('%')
+  call copilot_chat#buffer#welcome_message()
+  return g:active_chat_buffer
 endfunction
 
-function! copilot_chat#buffer#add_input_separator(buffer) abort
+function! copilot_chat#buffer#add_input_separator() abort
   let l:width = winwidth(0) - 2
   let l:separator = ' ' . repeat('━', l:width)
-  call appendbufline(a:buffer, '$', l:separator)
-  call appendbufline(a:buffer, '$', '')
+  call copilot_chat#buffer#append_message(l:separator)
+  call copilot_chat#buffer#append_message('')
 endfunction
 
 function! copilot_chat#buffer#waiting_for_response() abort
-  call appendbufline(g:active_chat_buffer, '$', 'Waiting for response')
+  call copilot_chat#buffer#append_message('Waiting for response')
   let s:waiting_timer = timer_start(500, {-> copilot_chat#buffer#update_waiting_dots()}, {'repeat': -1})
 endfunction
 
 function! copilot_chat#buffer#update_waiting_dots() abort
-  let l:current_text = getbufline(g:active_chat_buffer, '$')[0]
+  if !bufexists(g:active_chat_buffer)
+    call timer_stop(s:waiting_timer)
+    return 0
+  endif
+
+  let l:lines = getbufline(g:active_chat_buffer, '$')
+  if empty(l:lines)
+    call timer_stop(s:waiting_timer)
+    return 0
+  endif
+
+  let l:current_text = l:lines[0]
   if l:current_text =~? '^Waiting for response'
       let l:dots = len(matchstr(l:current_text, '\..*$'))
       let l:new_dots = (l:dots % 3) + 1
@@ -74,7 +84,16 @@ function! copilot_chat#buffer#add_selection() abort
 
   " Restore the original register and selection type
   call setreg('"', l:save_reg, l:save_regtype)
-  call appendbufline(g:active_chat_buffer, '$', '```' . l:filetype)
-  call appendbufline(g:active_chat_buffer, '$', split(l:selection, "\n"))
-  call appendbufline(g:active_chat_buffer, '$', '```')
+  call copilot_chat#buffer#append_message('```' . l:filetype)
+  call copilot_chat#buffer#append_message(split(l:selection, "\n"))
+  call copilot_chat#buffer#append_message('```')
+endfunction
+
+function! copilot_chat#buffer#append_message(message) abort
+  call appendbufline(g:active_chat_buffer, '$', a:message)
+endfunction
+
+function! copilot_chat#buffer#welcome_message() abort
+  call appendbufline(g:active_chat_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
+  call copilot_chat#buffer#add_input_separator()
 endfunction

@@ -24,4 +24,4 @@ jobs:
           mkdir -p ~/.vim/bundle
           git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
           cp .devcontainer/vimrc ~/.vimrc && vim +PluginInstall +qall
-          vim -c 'silent Vader! test/syntax.vader'
+          ./run-tests.sh

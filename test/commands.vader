@@ -1,0 +1,10 @@
+Execute:
+  source ./test/mocks/copilot_chat/auth.vim
+  call copilot_chat#start_chat("which model am i talking to?")
+  AssertEqual SyntaxAt(1,1), 'CopilotWelcome'
+  AssertEqual SyntaxAt(2,1), ''
+  AssertEqual SyntaxAt(3,1), 'CopilotSeparatorIcon'
+  AssertEqual SyntaxAt(3,4), 'CopilotSeparatorLine'
+  AssertEqual SyntaxAt(4,1), ''
+  AssertEqual SyntaxAt(5,1), ''
+  AssertEqual SyntaxAt(6,1), 'CopilotWaiting'
