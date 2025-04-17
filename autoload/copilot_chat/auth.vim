@@ -16,6 +16,7 @@ function! copilot_chat#auth#get_chat_token(fetch_new) abort
     return join(readfile(s:chat_token_file), "\n")
   else
     "call copilot_chat#api#get_token()
+    call copilot_chat#config#create_data_dir()
     let l:bearer_token = copilot_chat#auth#get_bearer_token()
     let l:token_url = 'https://api.github.com/copilot_internal/v2/token'
     let l:token_headers = [

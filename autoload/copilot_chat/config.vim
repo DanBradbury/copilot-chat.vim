@@ -1,10 +1,13 @@
-let s:config_dir = expand('~/.vim/copilot-chat')
-let s:chat_config_file = s:config_dir . '/config.json'
+let s:chat_config_file = g:copilot_chat_data_dir . '/config.json'
+
+function! copilot_chat#config#create_data_dir() abort
+  if !isdirectory(g:copilot_chat_data_dir)
+    call mkdir(g:copilot_chat_data_dir, 'p')
+  endif
+endfunction
 
 function! copilot_chat#config#load() abort
-  if !isdirectory(s:config_dir)
-    call mkdir(s:config_dir, 'p')
-  endif
+  call copilot_chat#config#create_data_dir()
   if filereadable(s:chat_config_file)
     let l:config = json_decode(join(readfile(s:chat_config_file), "\n"))
     let g:default_model = l:config.model
