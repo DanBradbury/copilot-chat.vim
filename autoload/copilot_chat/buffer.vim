@@ -6,7 +6,7 @@ let s:chat_count = 1
 let s:completion_active = 0
 
 function! copilot_chat#buffer#winsplit() abort
-  let l:position = copilot_chat#config#get('window_position', 'right')
+  let l:position = copilot_chat#config#get_value('window_position', 'right')
 
   " Create split based on position
   if l:position ==# 'right'

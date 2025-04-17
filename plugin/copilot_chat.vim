@@ -2,7 +2,6 @@ scriptencoding utf-8
 
 let g:copilot_chat_prompts = {}
 let g:copilot_chat_active_buffer = -1
-let g:copilot_chat_default_model = 'gpt-4o'
 let g:copilot_chat_available_models = []
 let g:copilot_chat_data_dir = get(g:, 'copilot_chat_data_dir', expand('~/.vim/copilot-chat', 1))
 let g:copilot_chat_zombie_buffer = -1
