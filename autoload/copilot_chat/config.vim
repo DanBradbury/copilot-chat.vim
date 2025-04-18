@@ -46,7 +46,9 @@ function! MenuKeyFilter(winid, key) abort
   elseif a:key ==? 'k' || a:key ==? "\<Up>"
     let g:selected_index = (g:selected_index - 1 + len(g:available_models)) % len(g:available_models)
   elseif a:key ==? "\<CR>" || a:key ==? "\<Space>"
-    echo 'You selected: ' . g:available_models[g:selected_index]
+    let l:selected_model = g:available_models[g:selected_index]
+    let g:copilot_chat_default_model = l:selected_model
+    echo 'You selected: ' . l:selected_model
     call popup_close(a:winid)
     return 1
   elseif a:key ==? "\<Esc>" || a:key ==? 'q'
