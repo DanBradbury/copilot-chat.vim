@@ -23,15 +23,4 @@ augroup CopilotChat
   autocmd FileType copilot_chat autocmd BufDelete <buffer> call copilot_chat#buffer#on_delete(expand('<abuf>'))
 augroup END
 
-if !exists('g:copilot_chat_disable_mappings')
-  let g:copilot_chat_disable_mappings = 0
-endif
-
-if g:copilot_chat_disable_mappings == 1
-  finish
-endif
-
-nnoremap <leader>cc :CopilotChatOpen<CR>
-vnoremap <silent> <leader>a :<C-u>call copilot_chat#buffer#add_selection()<CR>
-
 " vim:set ft=vim sw=2 sts=2 et:

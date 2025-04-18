@@ -100,16 +100,11 @@ Copilot's AI assistant directly from within their editor.
 ==============================================================================
 5. Key Mappings                                       *copilot-chat-mappings*
 
-Global mappings:
-    <Leader>cc       Opens a new chat window (normal mode)
-    <Leader>a        Adds the current visual selection to the active chat
-                     window inside a code block (visual mode)
-
-Buffer-specific mappings (in chat window):
+Default chat window mappings:
     <CR>             Submits current prompt (normal mode)
     <Leader>cs       Submits current prompt (normal mode)
 
-Buffer-specific mappings (in models window):
+Default in models-window mapping
     <CR>             Selects the model on current line for future chat use
 
 These mappings can be customized by adding your own mappings in your vimrc.
@@ -250,7 +245,7 @@ Example configuration:
 
 g:copilot_chat_disable_mappings                *g:copilot_chat_disable_mappings*
 
-Set to 1 to disable all the plugins default mappings.
+Set to 1 to disable the plugins default mappings in the chat window.
 
 g:copilot_chat_create_on_add_selection         *g:copilot_chat_create_on_add_selection*
 

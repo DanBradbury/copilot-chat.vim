@@ -1,6 +1,6 @@
 setlocal wrap nonumber norelativenumber
 
-if g:copilot_chat_disable_mappings == 1
+if exists('g:copilot_chat_disable_mappings') && g:copilot_chat_disable_mappings == 1
   finish
 endif
 

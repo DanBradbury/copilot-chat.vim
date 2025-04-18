@@ -87,13 +87,11 @@ filetype plugin indent on
 | `:CopilotChatList` | List all saved chat histories |
 | `:CopilotChatSetActive <bufnr>?` | Sets the active chat window to the buffer number provided (default is the current buffer) |
 
-## Key Mappings
+## Default Key Mappings
 | Location | Insert | Normal | Visual | Action |
 | ---- | ---- | ---- | ---- | ---- |
-| `global` | - | `<Leader>cc` | - | Opens a new chat window `:CopilotChat` |
-| `<buffer>` | - | `<CR>` | - | Submit current prompt |
-| `:CopilotModels` `<buffer>` | - | `<CR>` | - | Select the model on the current line for future chat use |
-| `global` | - | - | `<Leader>a` | Add the current selection to the active chat window inside a code block |
+| Chat window| - | `<CR>` | - | Submit current prompt |
+| Models list | - | `<CR>` | - | Select the model on the current line for future chat use |
 
 ## Features
 
