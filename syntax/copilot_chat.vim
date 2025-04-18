@@ -16,3 +16,5 @@ highlight CopilotPrompt ctermfg=230 guifg=#FFFF33
 if !exists('g:syntax_on')
   syntax enable
 endif
+
+" vim:set ft=vim sw=2 sts=2 et:

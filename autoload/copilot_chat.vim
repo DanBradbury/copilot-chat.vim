@@ -1,11 +1,26 @@
 scriptencoding utf-8
 
-function! copilot_chat#open_chat() abort
-  call copilot_chat#config#load()
-  call copilot_chat#auth#verify_signin()
-  let g:active_chat_buffer = copilot_chat#buffer#create()
+if !exists('g:copilot_chat_data_dir')
+  let g:copilot_chat_data_dir = expand('~/.vim/copilot-chat')
+endif
 
-  normal! G
+if !exists('g:copilot_reuse_active_chat')
+  let g:copilot_reuse_active_chat = 0
+endif
+
+let g:copilot_chat_zombie_buffer = -1
+
+function! copilot_chat#open_chat() abort
+
+  call copilot_chat#auth#verify_signin()
+
+  if copilot_chat#buffer#has_active_chat() &&
+     \  g:copilot_reuse_active_chat == 1
+    call copilot_chat#buffer#goto_active_chat()
+  else
+    call copilot_chat#buffer#create()
+    normal! G
+  endif
 endfunction
 
 function! copilot_chat#start_chat(message) abort
@@ -21,14 +36,14 @@ function! copilot_chat#reset_chat() abort
   endif
 
   let l:current_buf = bufnr('%')
-  
+
   " Switch to the active chat buffer if not already there
   if l:current_buf != g:active_chat_buffer
     execute 'buffer ' . g:active_chat_buffer
   endif
 
   silent! %delete _
-  
+
   call copilot_chat#buffer#welcome_message()
 
   normal! G
@@ -96,3 +111,5 @@ function! copilot_chat#http(method, url, headers, body) abort
   endif
   return l:response
 endfunction
+
+" vim:set ft=vim sw=2 sts=2 et:

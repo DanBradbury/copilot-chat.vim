@@ -108,3 +108,5 @@ function! copilot_chat#config#select_model() abort
   let l:config.model = l:selected_model
   call writefile([json_encode(l:config)], s:chat_config_file)
 endfunction
+
+" vim:set ft=vim sw=2 sts=2 et:

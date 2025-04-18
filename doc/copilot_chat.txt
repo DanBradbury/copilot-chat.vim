@@ -17,6 +17,8 @@ CONTENTS                                               *copilot-chat-contents*
         6.3 Chat History Management ............ |copilot-chat-history|
         6.4 Prompt Templates ................... |copilot-chat-templates|
     7. Configuration ........................... |copilot-chat-configuration|
+    7.1. AI configuration....................... |copilot-chat-ai-configuration|
+    7.2. VIM configuration.......................|copilot-chat-vim-configuration|
     8. Troubleshooting ......................... |copilot-chat-troubleshooting|
 
 ==============================================================================
@@ -92,6 +94,9 @@ Copilot's AI assistant directly from within their editor.
                                                        *:CopilotChatList*
 :CopilotChatList         Lists all saved chat histories.
 
+                                                       *:CopilotGotoChat*
+:CopilotGotoChat	 Goto the Copilot Chat window, if it exists.
+
 ==============================================================================
 5. Key Mappings                                       *copilot-chat-mappings*
 
@@ -108,6 +113,11 @@ Buffer-specific mappings (in models window):
     <CR>             Selects the model on current line for future chat use
 
 These mappings can be customized by adding your own mappings in your vimrc.
+
+In order to disable all default mapping, set `g:copilot_chat_disable_mappings`
+to 1 in your vimrc:
+>
+    let g:copilot_chat_disable_mappings = 1
 
 ==============================================================================
 6. Features                                           *copilot-chat-features*
@@ -209,6 +219,9 @@ This will send the full template text + your code to Copilot.
 ==============================================================================
 7. Configuration                                 *copilot-chat-configuration*
 
+------------------------------------------------------------------------------
+7.1 AI Configuration                               *ai-configuration*
+
 The plugin stores configuration in `~/.vim/copilot-chat/config.json`.
 
 To modify the configuration:
@@ -231,6 +244,37 @@ Example configuration:
       }
     }
 <
+
+------------------------------------------------------------------------------
+7.2 VIM Configuration                          *copilot-chat-vim-configuration*
+
+g:copilot_chat_disable_mappings                *g:copilot_chat_disable_mappings*
+
+Set to 1 to disable all the plugins default mappings.
+
+g:copilot_chat_create_on_add_selection         *g:copilot_chat_create_on_add_selection*
+
+Set to 1 to create a new chat window when adding it a visual selection to the
+chat if no chat window is open. If set to 0, no action is taken when no active
+chat window exists (default: 1).
+
+g:copilot_chat_jump_to_chat_on_add_selection   *g:copilot_chat_jump_to_chat_on_add_selection*
+
+Set to 1 to jump to the chat window when adding it a visual selection. If set
+to 0, the selection is added to the active chat window, but the user remains in
+the current window (default: 1).
+
+g:copilot_reuse_active_chat                    *g:copilot_reuse_active_chat*
+
+Set to 1 to reuse the active chat window when opening a new chat window. If set
+to 0, a new chat window is always created. Note that adding selection to is
+always appended to the active chat window, regardless of this setting (default:
+1).
+
+g:g:copilot_chat_data_dir                      *g:copilot_chat_data_dir*
+
+Set to the directory where the plugin stores its data. By default, this is
+`~/.vim/copilot-chat/`.
 
 ==============================================================================
 8. Troubleshooting                             *copilot-chat-troubleshooting*

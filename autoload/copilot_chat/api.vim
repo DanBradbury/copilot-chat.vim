@@ -24,17 +24,17 @@ function! copilot_chat#api#async_request(message) abort
         \ })
 
   let l:curl_cmd = [
-      \ 'curl',
-      \ '-s',
-      \ '-X',
-      \ 'POST',
-      \ '-H',
-      \ 'Content-Type: application/json',
-      \ '-H', 'Authorization: Bearer ' . l:chat_token,
-      \ '-H', 'Editor-Version: vscode/1.80.1',
-      \ '-d',
-      \ l:data,
-      \ l:url]
+        \ 'curl',
+        \ '-s',
+        \ '-X',
+        \ 'POST',
+        \ '-H',
+        \ 'Content-Type: application/json',
+        \ '-H', 'Authorization: Bearer ' . l:chat_token,
+        \ '-H', 'Editor-Version: vscode/1.80.1',
+        \ '-d',
+        \ l:data,
+        \ l:url]
 
   let job = job_start(l:curl_cmd, {'out_cb': function('copilot_chat#api#handle_job_output'), 'exit_cb': function('copilot_chat#api#handle_job_close'), 'err_cb': function('copilot_chat#api#handle_job_error')})
   return job
@@ -95,3 +95,5 @@ function! copilot_chat#api#fetch_models(chat_token) abort
 
   return l:response
 endfunction
+
+" vim:set ft=vim sw=2 sts=2 et:
