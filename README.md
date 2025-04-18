@@ -98,6 +98,20 @@ filetype plugin indent on
 | Chat window| - | `<CR>` | - | Submit current prompt |
 | Models list | - | `<CR>` | - | Select the model on the current line for future chat use |
 
+## User Key mappings
+The plugin avoids adding any default vim key mappings to prevent conflict with
+other plugins and the users' own mappings.
+
+However, to easily work with the Copilot Chat plugin, the user might want to
+setup his own vim key mappings. See example configuration below:
+
+```vim
+" Open a new Cpilot Chat window
+nnoremap <leader>cc :CopilotChatOpen<CR>
+
+" Add visual selection to copilot window
+vmap <leader>a <Plug>CopilotChatAddSelection
+```
 ## Features
 
 ### Model Selection
