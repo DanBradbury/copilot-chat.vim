@@ -87,6 +87,11 @@ filetype plugin indent on
 | `:CopilotChatList` | List all saved chat histories |
 | `:CopilotChatSetActive <bufnr>?` | Sets the active chat window to the buffer number provided (default is the current buffer) |
 
+## Plugin Keys
+| Key | Description |
+| ------- | ----------- |
+| `<Plug>CopilotChatAddSelection` | Copies selected text into active char buffer |
+
 ## Default Key Mappings
 | Location | Insert | Normal | Visual | Action |
 | ---- | ---- | ---- | ---- | ---- |

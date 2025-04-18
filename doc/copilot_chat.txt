@@ -11,6 +11,7 @@ CONTENTS                                               *copilot-chat-contents*
     3. Setup ................................... |copilot-chat-setup|
     4. Commands ................................ |copilot-chat-commands|
     5. Key Mappings ............................ |copilot-chat-mappings|
+        5.1 Plugin Keys......................... |copilot-chat-plugin-keys|
     6. Features ................................ |copilot-chat-features|
         6.1 Model Selection .................... |copilot-chat-models|
         6.2 Add Selection to Chat .............. |copilot-chat-add-selection|
@@ -113,6 +114,11 @@ In order to disable all default mapping, set `g:copilot_chat_disable_mappings`
 to 1 in your vimrc:
 >
     let g:copilot_chat_disable_mappings = 1
+
+5.1 Plugin Keys                                       *copilot-chat-plugin-keys*
+
+<Plug>CopilotChatAddSelection  Adds a selected text to active chat window
+                               buffer
 
 ==============================================================================
 6. Features                                           *copilot-chat-features*

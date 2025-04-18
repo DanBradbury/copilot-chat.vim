@@ -18,6 +18,8 @@ command! -nargs=0 CopilotChatList call copilot_chat#history#list()
 command! -nargs=0 CopilotChatReset call copilot_chat#reset_chat()
 command! -nargs=? CopilotChatSetActive call copilot_chat#buffer#set_active(<q-args>)
 
+vnoremap <silent> <Plug>CopilotChatAddSelection :<C-u>call copilot_chat#buffer#add_selection()<CR>
+
 augroup CopilotChat
   autocmd!
   autocmd FileType copilot_chat autocmd BufDelete <buffer> call copilot_chat#buffer#on_delete(expand('<abuf>'))
