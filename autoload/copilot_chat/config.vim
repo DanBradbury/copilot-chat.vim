@@ -3,9 +3,10 @@ let s:chat_config_file = s:config_dir . '/config.json'
 
 syntax match SelectedText  /^> .*/
 hi! SelectedText ctermfg=46 guifg=#33FF33
-hi! WhiteHighlight ctermfg=white ctermbg=NONE guifg=white guibg=NONE
+hi! GreenHighlight ctermfg=green ctermbg=NONE guifg=#33ff33 guibg=NONE
 hi! PopupNormal ctermfg=NONE ctermbg=NONE guifg=NONE guibg=NONE
 
+" not sure why setting this to script level doesn't work.. assume being used by the internal functions is the cause
 let g:selected_index = 0
 
 function! copilot_chat#config#load() abort
@@ -14,10 +15,10 @@ function! copilot_chat#config#load() abort
   endif
   if filereadable(s:chat_config_file)
     let l:config = json_decode(join(readfile(s:chat_config_file), "\n"))
-    let g:default_model = l:config.model
+    let g:copilot_chat_default_model = l:config.model
     let s:prompts = l:config.prompts
   else
-    let l:config = {'model': g:default_model, 'prompts': '[]'}
+    let l:config = {'model': g:copilot_chat_default_model, 'prompts': '[]'}
     call writefile([json_encode(l:config)], s:chat_config_file)
   endif
 endfunction
@@ -55,6 +56,8 @@ function! MenuKeyFilter(winid, key) abort
   endif
 
   let l:display_items = copy(g:available_models)
+  let l:active_model_index = index(g:available_models, g:copilot_chat_default_model)
+  let l:display_items[l:active_model_index] = '* ' . l:display_items[l:active_model_index]
   let l:display_items[g:selected_index] = '> ' . l:display_items[g:selected_index]
 
   call popup_settext(a:winid, l:display_items)
@@ -69,7 +72,7 @@ function! MenuKeyFilter(winid, key) abort
 endfunction
 
 function! copilot_chat#config#view_models() abort
-  let g:selected_index = index(g:available_models, g:default_model)
+  let g:selected_index = index(g:available_models, g:copilot_chat_default_model)
   if g:selected_index ==? -1
     let g:selected_index = 0
   endif
@@ -93,7 +96,7 @@ function! copilot_chat#config#view_models() abort
   let l:popup_id = popup_create(l:display_items, l:options)
 
 	let l:bufnr = winbufnr(l:popup_id)
-  call prop_type_add('highlight', {'highlight': 'WhiteHighlight', 'bufnr': l:bufnr})
+  call prop_type_add('highlight', {'highlight': 'GreenHighlight', 'bufnr': l:bufnr})
   call prop_add(g:selected_index+1, 1, {
         \ 'type': 'highlight',
         \ 'length': 60,
@@ -103,7 +106,7 @@ endfunction
 
 function! copilot_chat#config#select_model() abort
   let l:selected_model = getline('.')
-  let g:default_model = l:selected_model
+  let g:copilot_chat_default_model = l:selected_model
   let l:config = json_decode(join(readfile(s:chat_config_file), "\n"))
   let l:config.model = l:selected_model
   call writefile([json_encode(l:config)], s:chat_config_file)
