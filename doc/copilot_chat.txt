@@ -47,8 +47,8 @@ Copilot's AI assistant directly from within their editor.
    - Visit the URL in your browser and enter the code
    - Return to Vim and press Enter to continue
 
-3. Write your prompt under the line separator and press <Enter> in normal mode
-   or use |:SubmitChatMessage|
+3. Write your prompt under the line separator and press <Enter> in normal
+   mode to submit it.
 
 4. You should see "Waiting for response.." in the buffer to indicate work is
    being done in the background
@@ -58,30 +58,27 @@ Copilot's AI assistant directly from within their editor.
 ==============================================================================
 4. Commands                                           *copilot-chat-commands*
 
-                                                              *:CopilotChatOpen*
+                                                      *:CopilotChatOpen*
 :CopilotChatOpen         Opens a new Copilot Chat window (default vsplit right)
 
-                                                        *:CopilotChat <input>*
-:CopilotChat <input>     Launches a new Copilot chat with your input as the 
+                                                      *:CopilotChat*
+:CopilotChat [input]     Launches a new Copilot chat with your input as the 
                          initial prompt
 
-                                                        *:SubmitChatMessage*
-:SubmitChatMessage       Submits the current prompt to Copilot
-
-                                                        *:CopilotChatReset*
+                                                      *:CopilotChatReset*
 :CopilotChatReset        Resets the current chat window to its initial state,
                          clearing all conversation history
 
-                                                           *:CopilotConfig*
-:CopilotConfig           Opens the 'config.json' file for modifying default
+                                                      *:CopilotChatConfig*
+:CopilotChatConfig       Opens the 'config.json' file for modifying default
                          settings when opening a new CopilotChat window
 
-                                                           *:CopilotModels*
-:CopilotModels           Views available models and allows selecting the active
+                                                      *:CopilotChatModels*
+:CopilotChatModels       Views available models and allows selecting the active
                          model for future chats
 
-                                                            *:SelectModel*
-:SelectModel             Selects the current line's model as the default model
+                                                      *:CopilotChatSelectModel*
+:CopilotChatSelectModel  Selects the current line's model as the default model
 
                                                        *:CopilotChatSave*
 :CopilotChatSave [name]  Saves the current chat history with the provided name.
@@ -95,8 +92,8 @@ Copilot's AI assistant directly from within their editor.
                                                        *:CopilotChatList*
 :CopilotChatList         Lists all saved chat histories.
 
-                                                       *:CopilotGotoChat*
-:CopilotGotoChat	 Goto the Copilot Chat window, if it exists.
+                                                       *:CopilotChatFocus*
+:CopilotChatFocus        Goto the Copilot Chat window, if it exists.
 
 ==============================================================================
 5. Key Mappings                                       *copilot-chat-mappings*
@@ -128,7 +125,7 @@ to 1 in your vimrc:
 
 The plugin allows you to choose between different Copilot AI models:
 
-1. Use |:CopilotModels| to view available models
+1. Use |:CopilotChatModels| to view available models
 2. Navigate to the model you want to use
 3. Press <Enter> to select it
 4. New chats will use the selected model
@@ -194,7 +191,7 @@ Using templates:
 - Example: `> explain` would expand to the full explanation template
 
 Managing templates:
-1. Open the config with |:CopilotConfig|
+1. Open the config with |:CopilotChatConfig|
 2. Add templates to the "prompts" object in config.json:
 >
     {
@@ -226,7 +223,7 @@ This will send the full template text + your code to Copilot.
 The plugin stores configuration in `~/.vim/copilot-chat/config.json`.
 
 To modify the configuration:
-1. Run |:CopilotConfig| to open the configuration file
+1. Run |:CopilotChatConfig| to open the configuration file
 2. Edit the configuration
 3. Save the file
 
@@ -291,3 +288,5 @@ Connection issues:
 
 If you continue to experience issues, please visit the GitHub repository:
 https://github.com/DanBradbury/copilot-chat.vim
+
+  vim:tw=78:et:ft=help:norl:

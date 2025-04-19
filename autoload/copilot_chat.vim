@@ -16,7 +16,7 @@ function! copilot_chat#open_chat() abort
 
   if copilot_chat#buffer#has_active_chat() &&
      \  g:copilot_reuse_active_chat == 1
-    call copilot_chat#buffer#goto_active_chat()
+    call copilot_chat#buffer#focus_active_chat()
   else
     call copilot_chat#buffer#create()
     normal! G
@@ -30,7 +30,7 @@ function! copilot_chat#start_chat(message) abort
 endfunction
 
 function! copilot_chat#reset_chat() abort
-  if g:active_chat_buffer == -1 || !bufexists(g:active_chat_buffer)
+  if g:copilot_chat_active_buffer == -1 || !bufexists(g:copilot_chat_active_buffer)
     echom 'No active chat window to reset'
     return
   endif
@@ -38,8 +38,8 @@ function! copilot_chat#reset_chat() abort
   let l:current_buf = bufnr('%')
 
   " Switch to the active chat buffer if not already there
-  if l:current_buf != g:active_chat_buffer
-    execute 'buffer ' . g:active_chat_buffer
+  if l:current_buf != g:copilot_chat_active_buffer
+    execute 'buffer ' . g:copilot_chat_active_buffer
   endif
 
   silent! %delete _
@@ -48,7 +48,7 @@ function! copilot_chat#reset_chat() abort
 
   normal! G
 
-  if l:current_buf != g:active_chat_buffer && bufexists(l:current_buf)
+  if l:current_buf != g:copilot_chat_active_buffer && bufexists(l:current_buf)
     execute 'buffer ' . l:current_buf
   endif
 endfunction
@@ -65,8 +65,8 @@ function! copilot_chat#submit_message() abort
     if l:line =~? '^> \(\w\+\)'
       let l:text = matchstr(l:line, '^> \(\w\+\)')
       let l:text = substitute(l:text, '^> ', '', '')
-      if has_key(g:prompts, l:text)
-        let l:lines[l:i] = g:prompts[l:text]
+      if has_key(g:copilot_chat_prompts, l:text)
+        let l:lines[l:i] = g:copilot_chat_prompts[l:text]
       endif
     endif
   endfor

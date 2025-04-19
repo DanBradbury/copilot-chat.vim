@@ -34,21 +34,21 @@ function! copilot_chat#buffer#create() abort
   let s:chat_count += 1
 
   " Save buffer number for reference
-  let g:active_chat_buffer = bufnr('%')
+  let g:copilot_chat_active_buffer = bufnr('%')
   call copilot_chat#buffer#welcome_message()
-  return g:active_chat_buffer
+  return g:copilot_chat_active_buffer
 endfunction
 
 function! copilot_chat#buffer#has_active_chat() abort
-  if g:active_chat_buffer == -1
+  if g:copilot_chat_active_buffer == -1
     return 0
   endif
 
-  if !bufexists(g:active_chat_buffer)
+  if !bufexists(g:copilot_chat_active_buffer)
     return 0
   endif
 
-  let l:buf = getbufinfo(g:active_chat_buffer)
+  let l:buf = getbufinfo(g:copilot_chat_active_buffer)
   if empty(l:buf)
     return 0
   endif
@@ -56,19 +56,19 @@ function! copilot_chat#buffer#has_active_chat() abort
   return 1
 endfunction
 
-function! copilot_chat#buffer#goto_active_chat() abort
+function! copilot_chat#buffer#focus_active_chat() abort
   let l:current_buf = bufnr('%')
   if copilot_chat#buffer#has_active_chat() == 0
     return
   endif
 
-  if l:current_buf == g:active_chat_buffer
+  if l:current_buf == g:copilot_chat_active_buffer
     return
   endif
   let l:windows = getwininfo()
   for l:win in range(len(l:windows))
     let l:win_info = l:windows[l:win]
-    if l:win_info.bufnr != g:active_chat_buffer ||
+    if l:win_info.bufnr != g:copilot_chat_active_buffer ||
 	    \ (l:win_info.height == 0 && l:win_info.width == 0)
       continue
     endif
@@ -80,7 +80,7 @@ function! copilot_chat#buffer#goto_active_chat() abort
 
   " Not found in current visible windows, so create a new split
   call copilot_chat#buffer#winsplit()
-  execute 'buffer ' . g:active_chat_buffer
+  execute 'buffer ' . g:copilot_chat_active_buffer
 endfunction
 
 function! copilot_chat#buffer#add_input_separator() abort
@@ -96,12 +96,12 @@ function! copilot_chat#buffer#waiting_for_response() abort
 endfunction
 
 function! copilot_chat#buffer#update_waiting_dots() abort
-  if !bufexists(g:active_chat_buffer)
+  if !bufexists(g:copilot_chat_active_buffer)
     call timer_stop(s:waiting_timer)
     return 0
   endif
 
-  let l:lines = getbufline(g:active_chat_buffer, '$')
+  let l:lines = getbufline(g:copilot_chat_active_buffer, '$')
   if empty(l:lines)
     call timer_stop(s:waiting_timer)
     return 0
@@ -111,7 +111,7 @@ function! copilot_chat#buffer#update_waiting_dots() abort
   if l:current_text =~? '^Waiting for response'
       let l:dots = len(matchstr(l:current_text, '\..*$'))
       let l:new_dots = (l:dots % 3) + 1
-      call setbufline(g:active_chat_buffer, '$', 'Waiting for response' . repeat('.', l:new_dots))
+      call setbufline(g:copilot_chat_active_buffer, '$', 'Waiting for response' . repeat('.', l:new_dots))
     let s:color_index = (s:color_index + 1) % len(s:colors_gui)
     execute 'highlight CopilotWaiting guifg=' . s:colors_gui[s:color_index] . ' ctermfg=' . s:colors_cterm[s:color_index]
   endif
@@ -157,16 +157,16 @@ function! copilot_chat#buffer#add_selection() abort
 
   " Goto to the active chat buffer, either old or newly created.
   if g:copilot_chat_jump_to_chat_on_add_selection == 1
-    call copilot_chat#buffer#goto_active_chat()
+    call copilot_chat#buffer#focus_active_chat()
   endif
 endfunction
 
 function! copilot_chat#buffer#append_message(message) abort
-  call appendbufline(g:active_chat_buffer, '$', a:message)
+  call appendbufline(g:copilot_chat_active_buffer, '$', a:message)
 endfunction
 
 function! copilot_chat#buffer#welcome_message() abort
-  call appendbufline(g:active_chat_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
+  call appendbufline(g:copilot_chat_active_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
   call copilot_chat#buffer#add_input_separator()
 endfunction
 
@@ -176,7 +176,7 @@ function! copilot_chat#buffer#set_active(bufnr) abort
     let l:bufnr = bufnr('%')
   endif
 
-  if g:active_chat_buffer == l:bufnr
+  if g:copilot_chat_active_buffer == l:bufnr
     return
   endif
 
@@ -193,7 +193,7 @@ function! copilot_chat#buffer#set_active(bufnr) abort
   endif
 
   " Set the active chat buffer to the current buffer
-  let g:active_chat_buffer = l:bufnr
+  let g:copilot_chat_active_buffer = l:bufnr
 endfunction
 
 function! copilot_chat#buffer#on_delete(bufnr) abort
@@ -205,12 +205,12 @@ function! copilot_chat#buffer#on_delete(bufnr) abort
 	let g:copilot_chat_zombie_buffer = -1
   endif
 
-  if g:active_chat_buffer != a:bufnr
+  if g:copilot_chat_active_buffer != a:bufnr
     return
   endif
   " Unset the active chat buffer
-  let g:copilot_chat_zombie_buffer = g:active_chat_buffer
-  let g:active_chat_buffer = -1
+  let g:copilot_chat_zombie_buffer = g:copilot_chat_active_buffer
+  let g:copilot_chat_active_buffer = -1
 endfunction
 
 " vim:set ft=vim sw=2 sts=2 et:

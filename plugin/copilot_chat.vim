@@ -1,17 +1,17 @@
 scriptencoding utf-8
 
-let g:prompts = {}
-let g:active_chat_buffer = -1
-let g:default_model = 'gpt-4o'
-let g:available_models = []
+let g:copilot_chat_prompts = {}
+let g:copilot_chat_active_buffer = -1
+let g:copilot_chat_default_model = 'gpt-4o'
+let g:copilot_chat_available_models = []
 
 command! -nargs=0 CopilotChatOpen call copilot_chat#open_chat()
 command! -nargs=1 CopilotChat call copilot_chat#start_chat(<q-args>)
-command! -nargs=0 CopilotGotoChat call copilot_chat#buffer#goto_active_chat()
+command! -nargs=0 CopilotChatFocus call copilot_chat#buffer#focus_active_chat()
 command! -nargs=0 CopilotSubmit call copilot_chat#submit_message()
-command! -nargs=0 CopilotConfig call copilot_chat#config#view()
-command! -nargs=0 CopilotModels call copilot_chat#config#view_models()
-command! -nargs=0 SelectModel call copilot_chat#config#select_model()
+command! -nargs=0 CopilotChatConfig call copilot_chat#config#view()
+command! -nargs=0 CopilotChatModels call copilot_chat#config#view_models()
+command! -nargs=0 CopilotChatSelectModel call copilot_chat#config#select_model()
 command! -nargs=? CopilotChatSave call copilot_chat#history#save(<q-args>)
 command! -nargs=? CopilotChatLoad call copilot_chat#history#load(<q-args>)
 command! -nargs=0 CopilotChatList call copilot_chat#history#list()

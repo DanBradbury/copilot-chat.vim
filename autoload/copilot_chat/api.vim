@@ -15,7 +15,7 @@ function! copilot_chat#api#async_request(message) abort
   let l:messages = [{'content': a:message, 'role': 'user'}]
   let l:data = json_encode({
         \ 'intent': v:false,
-        \ 'model': g:default_model,
+        \ 'model': g:copilot_chat_default_model,
         \ 'temperature': 0,
         \ 'top_p': 1,
         \ 'n': 1,
@@ -45,7 +45,7 @@ function! copilot_chat#api#handle_job_output(channel, msg) abort
 endfunction
 
 function! copilot_chat#api#handle_job_close(channel, msg) abort
-  call deletebufline(g:active_chat_buffer, '$')
+  call deletebufline(g:copilot_chat_active_buffer, '$')
   let l:result = ''
   for line in s:curl_output
     if line =~? '^data: {'
@@ -90,7 +90,7 @@ function! copilot_chat#api#fetch_models(chat_token) abort
             call add(l:model_list, item.id)
         endif
     endfor
-    let g:available_models = l:model_list
+    let g:copilot_chat_available_models = l:model_list
   endtry
 
   return l:response

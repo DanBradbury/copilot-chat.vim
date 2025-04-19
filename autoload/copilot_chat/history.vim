@@ -17,7 +17,7 @@ function! copilot_chat#history#save(name) abort
   let l:in_assistant_message = 0
   let l:current_message = {'role': '', 'content': ''}
 
-  for line in getbufline(g:active_chat_buffer, 1, '$')
+  for line in getbufline(g:copilot_chat_active_buffer, 1, '$')
     " Skip welcome message and waiting lines
     if line =~? '^Welcome to Copilot Chat' || line =~? '^Waiting for response'
       continue
@@ -98,10 +98,10 @@ function! copilot_chat#history#load(name) abort
     else
       let l:width = winwidth(0) - 2
       let l:separator = ' ' . repeat('━', l:width)
-      call appendbufline(g:active_chat_buffer, '$', l:separator)
+      call appendbufline(g:copilot_chat_active_buffer, '$', l:separator)
     endif
 
-    call appendbufline(g:active_chat_buffer, '$', split(message.content, "\n"))
+    call appendbufline(g:copilot_chat_active_buffer, '$', split(message.content, "\n"))
   endfor
 
   " Add final separator for new input
