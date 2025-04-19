@@ -118,14 +118,6 @@ function! copilot_chat#buffer#update_waiting_dots() abort
   return 1
 endfunction
 
-if !exists('g:copilot_chat_create_on_add_selection')
-  let g:copilot_chat_create_on_add_selection = 1
-endif
-
-if !exists('g:copilot_chat_jump_to_chat_on_add_selection')
-  let g:copilot_chat_jump_to_chat_on_add_selection = 1
-endif
-
 function! copilot_chat#buffer#add_selection() abort
   if copilot_chat#buffer#has_active_chat() == 0
     if g:copilot_chat_create_on_add_selection == 0

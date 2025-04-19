@@ -139,7 +139,7 @@ Save and restore your chat conversations with Copilot:
 Copilot Chat supports custom prompt templates that can be quickly accessed during chat sessions. Templates allow you to save frequently used prompts and invoke them with a simple syntax.
 
 #### Using Prompts
-- In the chat window, start a line with `> PROMPT_NAME` 
+- In the chat window, start a line with `> PROMPT_NAME`
 - The `PROMPT_NAME` will be automatically replaced with the template content before sending to Copilot
 - Example: `> explain` would expand to the full explanation template
 
