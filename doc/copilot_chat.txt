@@ -62,7 +62,7 @@ Copilot's AI assistant directly from within their editor.
 :CopilotChatOpen         Opens a new Copilot Chat window (default vsplit right)
 
                                                         *:CopilotChat <input>*
-:CopilotChat <input>     Launches a new Copilot chat with your input as the 
+:CopilotChat <input>     Launches a new Copilot chat with your input as the
                          initial prompt
 
                                                         *:SubmitChatMessage*
