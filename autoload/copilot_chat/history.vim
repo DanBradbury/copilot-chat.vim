@@ -111,29 +111,31 @@ function! copilot_chat#history#load(name) abort
   return 1
 endfunction
 
-function! copilot_chat#history#list() abort
+function! copilot_chat#history#get() abort
   if !isdirectory(s:history_dir)
     call mkdir(s:history_dir, 'p')
-    echo 'No saved chat histories'
     return []
   endif
 
-  let l:files = glob(s:history_dir . '/*.json', 0, 1)
-  let l:histories = []
+  return map(glob(s:history_dir . '/*.json', 0, 1), {-> fnamemodify(v:val, ':t:r')})
+endfunction
 
-  if empty(l:files)
+function! copilot_chat#history#complete(A, L, P) abort
+  return matchfuzzy(copilot_chat#history#get(), a:A)
+endfunction
+
+function! copilot_chat#history#list() abort
+  let l:histories = copilot_chat#history#get()
+
+  if empty(l:histories)
     echo 'No saved chat histories'
-    return []
+    return
   endif
 
   echo 'Available chat histories:'
-  for file in l:files
-    let l:basename = fnamemodify(file, ':t:r')
-    call add(l:histories, l:basename)
-    echo '- ' . l:basename
+  for history in l:histories
+    echo '- ' . history
   endfor
-
-  return l:histories
 endfunction
 
 " vim:set ft=vim sw=2 sts=2 et:
