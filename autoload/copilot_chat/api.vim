@@ -36,15 +36,43 @@ function! copilot_chat#api#async_request(message) abort
         \ l:data,
         \ l:url]
 
-  let job = job_start(l:curl_cmd, {'out_cb': function('copilot_chat#api#handle_job_output'), 'exit_cb': function('copilot_chat#api#handle_job_close'), 'err_cb': function('copilot_chat#api#handle_job_error')})
+  if has('nvim')
+    let job = jobstart(l:curl_cmd, {
+      \ 'on_stdout': function('copilot_chat#api#handle_job_output'),
+      \ 'on_exit': function('copilot_chat#api#handle_job_close'),
+      \ 'on_stderr': function('copilot_chat#api#handle_job_error'),
+      \ 'stdout_buffered': v:true,
+      \ 'stderr_buffered': v:true
+      \ })
+  else
+    let job = job_start(l:curl_cmd, {
+      \ 'out_cb': function('copilot_chat#api#handle_job_output'),
+      \ 'exit_cb': function('copilot_chat#api#handle_job_close'),
+      \ 'err_cb': function('copilot_chat#api#handle_job_error')
+      \ })
+  endif
+
   return job
 endfunction
 
-function! copilot_chat#api#handle_job_output(channel, msg) abort
-  call add(s:curl_output, a:msg)
+function! copilot_chat#api#handle_job_output(...) abort
+  if a:0 < 2
+    return
+  endif
+
+  let l:msg = a:2
+  if type(l:msg) == v:t_list
+    for data in l:msg
+      if data =~? '^data: {'
+        call add(s:curl_output, data)
+      endif
+    endfor
+  else
+    call add(s:curl_output, l:msg)
+  endif
 endfunction
 
-function! copilot_chat#api#handle_job_close(channel, msg) abort
+function! copilot_chat#api#handle_job_close(...) abort
   call deletebufline(g:copilot_chat_active_buffer, '$')
   let l:result = ''
   for line in s:curl_output
@@ -69,9 +97,17 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
   call copilot_chat#buffer#add_input_separator()
 endfunction
 
-function! copilot_chat#api#handle_job_error(channel, msg) abort
-  echom 'handling curl error'
-  echom a:msg
+function! copilot_chat#api#handle_job_error(...) abort
+  if a:0 < 2
+    return
+  endif
+
+  let l:msg = a:2
+  if type(l:msg) == v:t_list
+    call echom string(join(l:msg, "\n"))
+  else
+    echom l:msg
+  endif
 endfunction
 
 function! copilot_chat#api#fetch_models(chat_token) abort
