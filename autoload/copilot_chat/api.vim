@@ -104,7 +104,7 @@ function! copilot_chat#api#handle_job_error(...) abort
 
   let l:msg = a:2
   if type(l:msg) == v:t_list
-    call echom string(join(l:msg, "\n"))
+    echom string(join(l:msg, "\n"))
   else
     echom l:msg
   endif
