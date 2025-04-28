@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  vader:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -17,11 +17,20 @@ jobs:
           fetch-depth: 0
 
       - name: Install Vim
-        run: sudo apt-get install vim
+        run: sudo apt-get install vim nvim
 
-      - name: Test
+      - name: vim tests
         run: |
           mkdir -p ~/.vim/bundle
           git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
           cp .devcontainer/vimrc ~/.vimrc && vim +PluginInstall +qall
-          ./run-tests.sh
+          cp -r * ~/.vim/bundle/copilot-chat.vim/
+          vim '+Vader! test/*.vader'
+
+      - name: nvim tests
+        run: |
+          # Install Neovim plugins
+          mkdir -p ~/.config/nvim
+          mkdir -p ~/.local/share/nvim/site/pack/plugins/start
+          cp -r * ~/.local/share/nvim/site/pack/plugins/start/copilot-chat.vim/
+          nvim '+Vader! test/*.vader'
