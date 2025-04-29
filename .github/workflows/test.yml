@@ -29,6 +29,6 @@ jobs:
 
       - name: nvim tests
         run: |
-          mkdir -p ~/.local/share/nvim/site/pack/plugins/start/copilot-chat.vim
-          cp -r * ~/.local/share/nvim/site/autoload/copilot-chat.vim/
+          mkdir -p ~/.local/share/nvim/site/autoload/copilot-chat.vim
+          cp -r * ~/.local/share/nvim/site/autoload/copilot-chat.vim
           nvim --headless '+Vader! test/*.vader' '+qall!'
