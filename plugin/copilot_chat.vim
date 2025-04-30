@@ -2,7 +2,6 @@ scriptencoding utf-8
 
 let g:copilot_chat_prompts = {}
 let g:copilot_chat_active_buffer = -1
-let g:copilot_chat_available_models = []
 let g:copilot_chat_data_dir = get(g:, 'copilot_chat_data_dir', expand('~/.vim/copilot-chat', 1))
 let g:copilot_chat_zombie_buffer = -1
 let g:copilot_reuse_active_chat = get(g:, 'copilot_reuse_active_chat', 0)
@@ -14,7 +13,7 @@ command! -nargs=1 CopilotChat call copilot_chat#start_chat(<q-args>)
 command! -nargs=0 CopilotChatFocus call copilot_chat#buffer#focus_active_chat()
 command! -nargs=0 CopilotChatSubmit call copilot_chat#submit_message()
 command! -nargs=0 CopilotChatConfig call copilot_chat#config#view()
-command! -nargs=0 CopilotChatModels call copilot_chat#config#view_models()
+command! -nargs=0 CopilotChatModels call copilot_chat#models#select()
 command! -nargs=? CopilotChatSave call copilot_chat#history#save(<q-args>)
 command! -nargs=? -complete=customlist,copilot_chat#history#complete CopilotChatLoad call copilot_chat#history#load(<q-args>)
 command! -nargs=0 CopilotChatList call copilot_chat#history#list()

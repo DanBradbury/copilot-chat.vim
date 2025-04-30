@@ -22,7 +22,7 @@ function! copilot_chat#api#async_request(message, file_list) abort
 
   let l:data = json_encode({
         \ 'intent': v:false,
-        \ 'model': copilot_chat#config#model(),
+        \ 'model': copilot_chat#models#current(),
         \ 'temperature': 0,
         \ 'top_p': 1,
         \ 'n': 1,
@@ -127,7 +127,7 @@ function! copilot_chat#api#fetch_models(chat_token) abort
             call add(l:model_list, item.id)
         endif
     endfor
-    let g:copilot_chat_available_models = l:model_list
+    return l:model_list
   endtry
 
   return l:response
