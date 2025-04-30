@@ -16,19 +16,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Vim
-        run: sudo apt-get install vim neovim
-
-      - name: vim tests
+      - name: Install + Setup Vim
         run: |
+          sudo apt-get install vim neovim
           mkdir -p ~/.vim/bundle
           git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
           cp .devcontainer/vimrc ~/.vimrc && vim +PluginInstall +qall
           cp -r * ~/.vim/bundle/copilot-chat.vim/
+          # nvim setup
+          cat <<EOF > ~/.config/nvim/init.vim
+          set runtimepath^=~/.vim runtimepath+=~/.vim/after
+          let &packpath = &runtimepath
+          source ~/.vimrc
+          EOF
+
+      - name: vim tests
+        run: |
           vim '+Vader! test/*.vader'
 
       - name: nvim tests
         run: |
-          mkdir -p ~/.local/share/nvim/site/autoload/copilot-chat.vim
-          cp -r * ~/.local/share/nvim/site/autoload/copilot-chat.vim
           nvim --headless '+Vader! test/*.vader' '+qall!'

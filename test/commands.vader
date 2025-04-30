@@ -7,4 +7,6 @@ Execute:
   AssertEqual SyntaxAt(3,4), 'CopilotSeparatorLine'
   AssertEqual SyntaxAt(4,1), ''
   AssertEqual SyntaxAt(5,1), ''
+  AssertEqual getline(5), 'which model am i talking to?'
   AssertEqual SyntaxAt(6,1), 'CopilotWaiting'
+  AssertEqual getline('$'), 'Waiting for response'

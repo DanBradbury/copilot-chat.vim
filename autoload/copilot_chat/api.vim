@@ -7,8 +7,6 @@ function! copilot_chat#api#async_request(message) abort
   let s:curl_output = []
   let l:url = 'https://api.githubcopilot.com/chat/completions'
 
-  call copilot_chat#buffer#waiting_for_response()
-
   " for knowledge bases its just an attachment as the content
   "{'content': '<attachment id="kb:Name">\n#kb:\n</attachment>', 'role': 'user'}
   " for files similar
@@ -37,6 +35,7 @@ function! copilot_chat#api#async_request(message) abort
         \ l:url]
 
   let job = job_start(l:curl_cmd, {'out_cb': function('copilot_chat#api#handle_job_output'), 'exit_cb': function('copilot_chat#api#handle_job_close'), 'err_cb': function('copilot_chat#api#handle_job_error')})
+  call copilot_chat#buffer#waiting_for_response()
   return job
 endfunction
 
