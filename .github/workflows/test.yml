@@ -24,6 +24,7 @@ jobs:
           cp .devcontainer/vimrc ~/.vimrc && vim +PluginInstall +qall
           cp -r * ~/.vim/bundle/copilot-chat.vim/
           # nvim setup
+          mkdir -p ~/.config/nvim
           cat <<EOF > ~/.config/nvim/init.vim
           set runtimepath^=~/.vim runtimepath+=~/.vim/after
           let &packpath = &runtimepath
