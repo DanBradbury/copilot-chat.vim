@@ -70,7 +70,7 @@ function! copilot_chat#config#filter_models(winid, key) abort
   let l:bufnr = winbufnr(a:winid)
   if has('nvim')
     call nvim_buf_set_lines(l:bufnr, 0, -1, v:true, l:display_items)
-	else
+  else
     call popup_settext(a:winid, l:display_items)
 
     call prop_add(g:copilot_popup_selection + 1, 1, {
@@ -78,7 +78,7 @@ function! copilot_chat#config#filter_models(winid, key) abort
       \ 'length': 60,
       \ 'bufnr': l:bufnr
       \ })
-	endif
+  endif
   return 1
 endfunction
 
