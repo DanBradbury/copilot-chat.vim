@@ -356,14 +356,22 @@ function! copilot_chat#buffer#check_for_macro()
       let line = getline('.')
       let start = match(line, '#file:') + 6
       let typed = strpart(line, start, col('.') - start - 1)
-      if typed != '' && filereadable(typed)
+      if typed != '' && filereadable(typed) && !isdirectory(typed)
         return
       endif
-      let files = glob('**/*', 0, 1)
+
+      let is_git_repo = system('git rev-parse --is-inside-work-tree 2>/dev/null')
+
+      if v:shell_error == 0  " We are in a git repo
+        let files = systemlist('git ls-files --cached --others --exclude-standard')
+      else
+        let files = glob('**/*', 0, 1)
+      endif
+
       " Filter out directories and prepare completion items
       let matches = []
       for file in files
-        if !isdirectory(file)
+        if !isdirectory(file) && file =~? typed
           call add(matches, file)
         endif
       endfor
