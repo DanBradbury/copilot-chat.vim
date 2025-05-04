@@ -1,7 +1,6 @@
 scriptencoding utf-8
 
 function! copilot_chat#open_chat() abort
-
   call copilot_chat#auth#verify_signin()
 
   if copilot_chat#buffer#has_active_chat() &&

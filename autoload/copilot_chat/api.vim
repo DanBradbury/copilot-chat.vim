@@ -2,7 +2,7 @@ scriptencoding utf-8
 
 let s:curl_output = []
 
-function! copilot_chat#api#async_request(message, file_list) abort
+function! copilot_chat#api#async_request(message, file_list=[]) abort
   let l:chat_token = copilot_chat#auth#verify_signin()
   let s:curl_output = []
   let l:url = 'https://api.githubcopilot.com/chat/completions'
@@ -42,6 +42,7 @@ function! copilot_chat#api#async_request(message, file_list) abort
         \ '-d',
         \ l:data,
         \ l:url]
+  call copilot_chat#log#write(l:data)
 
   if has('nvim')
     let job = jobstart(l:curl_cmd, {
