@@ -1,7 +1,6 @@
 scriptencoding utf-8
 
 function! copilot_chat#open_chat() abort
-
   call copilot_chat#auth#verify_signin()
 
   if copilot_chat#buffer#has_active_chat() &&
@@ -49,6 +48,7 @@ function! copilot_chat#submit_message() abort
   let l:end_line = line('$')
 
   let l:lines = getline(l:start_line, l:end_line)
+  let l:file_list = []
 
   for l:i in range(len(l:lines))
     let l:line = l:lines[l:i]
@@ -58,11 +58,14 @@ function! copilot_chat#submit_message() abort
       if has_key(g:copilot_chat_prompts, l:text)
         let l:lines[l:i] = g:copilot_chat_prompts[l:text]
       endif
+    elseif l:line =~? '^#file:'
+      let l:filename = matchstr(l:line, '^#file:\s*\zs.*\ze$')
+      call add(l:file_list, l:filename)
     endif
   endfor
   let l:message = join(l:lines, "\n")
 
-  call copilot_chat#api#async_request(l:message)
+  call copilot_chat#api#async_request(l:message, l:file_list)
 endfunction
 
 function! copilot_chat#http(method, url, headers, body) abort
