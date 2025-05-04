@@ -300,4 +300,49 @@ function! copilot_chat#buffer#highlight_code_block(start_line, end_line, lang, b
   endif
 endfunction
 
+function! copilot_chat#buffer#check_for_macro()
+  let current_line = getline('.')
+  let cursor_pos = col('.')
+  let before_cursor = strpart(current_line, 0, cursor_pos)
+  if current_line =~# '/tab all'
+    " Get the position where the pattern starts
+    let pattern_start = match(before_cursor, '/tab all')
+    
+    " Delete the pattern
+    call cursor(line('.'), pattern_start + 1)
+    exec "normal! d" . len('/tab all') . "l"
+    
+    " Get current buffer number to exclude it
+    let current_bufnr = bufnr('%')
+    
+    " Generate list of tabs with #file: prefix, excluding current buffer
+    let tab_list = []
+    for i in range(1, tabpagenr('$'))
+      let buflist = tabpagebuflist(i)
+      let winnr = tabpagewinnr(i)
+      let buf_nr = buflist[winnr - 1]
+      let filename = bufname(buf_nr)
+      
+      " Only add if it's not the current buffer and has a filename
+      if buf_nr != current_bufnr && filename != ''
+        " Use the relative path format instead of just the base filename
+        let display_name = "#file:" . filename
+        call add(tab_list, display_name)
+      endif
+    endfor
+    
+    " Insert the tab list at cursor position, one per line
+    if len(tab_list) > 0
+      " Add a newline at the end of the text to be inserted
+      let tabs_text = join(tab_list, "\n") . "\n"
+      exec "normal! i" . tabs_text
+    else
+      exec "normal! iNo other tabs found\n"
+    endif
+    
+    " Position cursor on the empty line
+    call cursor(line('.'), 1)
+  endif
+endfunction
+
 " vim:set ft=vim sw=2 sts=2 et:
