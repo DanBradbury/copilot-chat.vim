@@ -274,7 +274,7 @@ to 0, a new chat window is always created. Note that adding selection to is
 always appended to the active chat window, regardless of this setting (default:
 1).
 
-g:g:copilot_chat_data_dir                      *g:copilot_chat_data_dir*
+g:copilot_chat_data_dir                        *g:copilot_chat_data_dir*
 
 Set to the directory where the plugin stores its data. By default, this is
 `~/.vim/copilot-chat/`.
