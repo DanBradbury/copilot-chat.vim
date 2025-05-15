@@ -284,6 +284,11 @@ g:copilot_chat_open_on_toggle                  *g:copilot_chat_open_on_toggle*
 Set to 0 to prevent a new chat window from opening when toggling the chat
 window.
 
+g:copilot_list_chat_buffer                     *g:copilot_list_chat_buffer*
+
+By default, copilot-chat buffers are not listed. Set to 1 to change this
+behavior.
+
 
 ==============================================================================
 8. Troubleshooting                             *copilot-chat-troubleshooting*

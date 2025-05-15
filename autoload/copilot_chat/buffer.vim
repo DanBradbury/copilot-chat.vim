@@ -20,6 +20,8 @@ function! copilot_chat#buffer#winsplit() abort
   endif
 endfunction
 
+let s:copilot_list_chat_buffer = get(g:, 'copilot_list_chat_buffer', 0)
+
 function! copilot_chat#buffer#create() abort
   call copilot_chat#buffer#winsplit()
 
@@ -29,6 +31,9 @@ function! copilot_chat#buffer#create() abort
   setlocal bufhidden=hide
   setlocal noswapfile
   setlocal filetype=copilot_chat
+  if s:copilot_list_chat_buffer == 0
+    setlocal nobuflisted
+  endif
 
   " Set buffer name
   execute 'file CopilotChat-' . s:chat_count
