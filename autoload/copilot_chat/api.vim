@@ -18,6 +18,9 @@ function! copilot_chat#api#async_request(messages, file_list) abort
     call add(a:messages, {'content': l:c, 'role': 'user'})
   endfor
 
+  let l:tools = []
+  call add(l:tools, {"function": {"name": "semantic_search","description": "Run a natural language search for relevant code or documentation comments from the user's current workspace. Returns relevant code snippets from the user's current workspace if it is large, or the full contents of the workspace if it is small.", "parameters": {"type": "object", "properties": {"query": {"type": "string","description": "The query to search the codebase for. Should contain all relevant context. Should ideally be text that might appear in the codebase, such as function names, variable names, or comments."}},"required": ["query"]}},"type": "function"})
+
   let l:data = json_encode({
         \ 'intent': v:false,
         \ 'model': copilot_chat#models#current(),
@@ -25,8 +28,10 @@ function! copilot_chat#api#async_request(messages, file_list) abort
         \ 'top_p': 1,
         \ 'n': 1,
         \ 'stream': v:true,
-        \ 'messages': a:messages
+        \ 'messages': a:messages,
+        \ 'tools': l:tools
         \ })
+  call copilot_chat#log#write(l:data)
 
   let l:curl_cmd = [
         \ 'curl',
@@ -76,19 +81,42 @@ endfunction
 function! copilot_chat#api#handle_job_close(channel, msg) abort
   call deletebufline(g:copilot_chat_active_buffer, '$')
   let l:result = ''
+  let l:function_request = {}
+  let l:function_arguments = ""
   for line in s:curl_output
     if line =~? '^data: {'
       let l:json_completion = json_decode(line[6:])
-      try
-        let l:content = l:json_completion.choices[0].delta.content
-        if type(l:content) != type(v:null)
-          let l:result .= l:content
+      if line =~? 'tool_calls'
+        " call copilot_chat#log#write(line)
+        if has_key(l:json_completion.choices[0].delta, 'tool_calls') && has_key(l:json_completion.choices[0].delta.tool_calls[0], 'id')
+          let l:function_request = {'type': 'function', 'id': l:json_completion.choices[0].delta.tool_calls[0].id, 'function': {'name': l:json_completion.choices[0].delta.tool_calls[0].function.name}}
+        elseif line =~? 'finish_reason'
+          " let l:tt = json_decode(l:function_arguments)
+          let l:function_request['function']['arguments'] = l:function_arguments
+          let [l:messages, l:file_list]  = copilot_chat#get_messages()
+          " TODO: move this out into a service worker..
+          " for now we will just send this back in the messages and pretend that we got some sort of response
+          call add(l:messages, {'role': 'assistant', 'content': '', 'tool_calls': [l:function_request]})
+          call add(l:messages, {'role': 'tool', 'content': 'NOTHING FOUND', 'tool_call_id': l:function_request['id']})
+
+          call copilot_chat#api#async_request(l:messages, l:file_list)
+        else
+          let l:function_arguments .= l:json_completion.choices[0].delta.tool_calls[0].function.arguments
         endif
-      catch
-        let l:result .= "\n"
-      endtry
+      " elseif has_key(l:json_completion, 'choices') && len(l:json_completion.choices) > 0 && has_key(l:json_completion.choices[0], 'delta') && has_key(l:json_completion.choices[0].delta, 'content') && type(l:json_completion.choices[0].delta.content) != type(v:null)
+      else
+        try
+          let l:content = l:json_completion.choices[0].delta.content
+          if type(l:content) != type(v:null)
+            let l:result .= l:content
+          endif
+        catch
+          let l:result .= "\n"
+        endtry
+      endif
     endif
   endfor
+  call copilot_chat#log#write(l:result)
 
   let l:width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
   let l:separator = ' '
