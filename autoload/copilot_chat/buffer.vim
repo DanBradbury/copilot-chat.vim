@@ -85,6 +85,23 @@ function! copilot_chat#buffer#focus_active_chat() abort
   execute 'buffer ' . g:copilot_chat_active_buffer
 endfunction
 
+let s:copilot_chat_open_on_toggle = get(g:, 'copilot_chat_open_on_toggle', 1)
+function! copilot_chat#buffer#toggle_active_chat() abort
+  if copilot_chat#buffer#has_active_chat() == 0
+    if s:copilot_chat_open_on_toggle == 1
+      call copilot_chat#buffer#create()
+    endif
+    return
+  endif
+
+  let l:current_bufnr = bufnr('%')
+  if l:current_bufnr == g:copilot_chat_active_buffer
+    close
+  else
+    call copilot_chat#buffer#focus_active_chat()
+  endif
+endfunction
+
 function! copilot_chat#buffer#add_input_separator() abort
   let l:width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
   let l:separator = ' ' . repeat('━', l:width)
