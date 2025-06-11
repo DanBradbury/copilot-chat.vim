@@ -92,6 +92,14 @@ Copilot's AI assistant directly from within their editor.
                                                        *:CopilotChatFocus*
 :CopilotChatFocus        Goto the Copilot Chat window, if it exists.
 
+                                                       *:CopilotChatToggle*
+:CopilotChatToggle       Toggle the Copilot Chat window. If it exists, close it. If it
+                         doesn't exist, open a new one. Set
+                         |g:s:copilot_chat_open_on_toggle| to 0 to prevnet new
+                         windows from opening.
+
+
+
 ==============================================================================
 5. Key Mappings                                       *copilot-chat-mappings*
 
@@ -270,6 +278,12 @@ g:g:copilot_chat_data_dir                      *g:copilot_chat_data_dir*
 
 Set to the directory where the plugin stores its data. By default, this is
 `~/.vim/copilot-chat/`.
+
+g:copilot_chat_open_on_toggle                  *g:copilot_chat_open_on_toggle*
+
+Set to 0 to prevent a new chat window from opening when toggling the chat
+window.
+
 
 ==============================================================================
 8. Troubleshooting                             *copilot-chat-troubleshooting*
