@@ -42,9 +42,10 @@ function! copilot_chat#reset_chat() abort
   endif
 endfunction
 
-function! copilot_chat#submit_message() abort
+function! copilot_chat#get_messages() abort
   let l:messages = []
-  let l:responses = []
+  let l:file_list = []
+
   let l:pattern = ' ━\+$'
   call cursor(1,1)
 
@@ -84,6 +85,11 @@ function! copilot_chat#submit_message() abort
     call add(l:messages, {'content': l:message, 'role': l:role})
     call cursor(line('.'), col('.') + 1)
   endwhile
+  return [l:messages, l:file_list]
+endfunction
+
+function! copilot_chat#submit_message() abort
+  let [l:messages, l:file_list] = copilot_chat#get_messages()
 
   call copilot_chat#api#async_request(l:messages, l:file_list)
 endfunction
