@@ -2,7 +2,7 @@ scriptencoding utf-8
 
 let s:curl_output = []
 
-function! copilot_chat#api#async_request(message) abort
+function! copilot_chat#api#async_request(messages, file_list) abort
   let l:chat_token = copilot_chat#auth#verify_signin()
   let s:curl_output = []
   let l:url = 'https://api.githubcopilot.com/chat/completions'
@@ -10,15 +10,22 @@ function! copilot_chat#api#async_request(message) abort
   " for knowledge bases its just an attachment as the content
   "{'content': '<attachment id="kb:Name">\n#kb:\n</attachment>', 'role': 'user'}
   " for files similar
-  let l:messages = [{'content': a:message, 'role': 'user'}]
+  for file in a:file_list
+    let l:file_content = readfile(file)
+    let full_path = fnamemodify(file, ':p')
+    " TODO: get the filetype instead of just markdown
+    let l:c = '<attachment id="' . file . '">\n````markdown\n<!-- filepath: ' . full_path . ' -->\n' . join(l:file_content, "\n") . '\n```</attachment>'
+    call add(a:messages, {'content': l:c, 'role': 'user'})
+  endfor
+
   let l:data = json_encode({
         \ 'intent': v:false,
-        \ 'model': g:copilot_chat_default_model,
+        \ 'model': copilot_chat#models#current(),
         \ 'temperature': 0,
         \ 'top_p': 1,
         \ 'n': 1,
         \ 'stream': v:true,
-        \ 'messages': l:messages
+        \ 'messages': a:messages
         \ })
 
   let l:curl_cmd = [
@@ -118,7 +125,7 @@ function! copilot_chat#api#fetch_models(chat_token) abort
             call add(l:model_list, item.id)
         endif
     endfor
-    let g:copilot_chat_available_models = l:model_list
+    return l:model_list
   endtry
 
   return l:response

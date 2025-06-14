@@ -114,6 +114,29 @@ vmap <leader>a <Plug>CopilotChatAddSelection
 ```
 ## Features
 
+### Autocomplete Macros
+
+The plugin includes autocomplete macros, specifically designed to enhance productivity when working with file references.
+
+#### `/tab all` Macro
+![macros](https://github.com/user-attachments/assets/07c737e9-79f1-45e1-aa49-2729484b0e95)
+
+- Typing `/tab all` in the chat window will automatically expand into a list of all open tabs (excluding the current buffer) with their filenames prefixed by `#file:`.
+- The filenames are displayed in their relative path format, making it easier to reference files in your project.
+- If no other tabs are found, the message `No other tabs found` will be inserted instead.
+
+#### `#file:` Macro
+![filemacro](https://github.com/user-attachments/assets/f790f1a0-5cdf-4660-b602-349de5c229bc)
+
+- When typing `#file:` in the chat window, the plugin provides an autocomplete menu for file paths.
+- The autocomplete intelligently suggests files based on:
+  - Files tracked in the current Git repository (if inside a Git project).
+  - All files in the current working directory (if not in a Git project).
+- The suggestions exclude directories and only include files that match the text typed after `#file:`.
+- Example:
+  - Typing `#file:src/` will show a list of files in the `src/` directory.
+  - Selecting a file from the menu will insert its full path.
+
 ### Model Selection
 `:CopilotChatModels` brings up a popup menu for of all the available models for you to choose from. Press `<Enter>` or `<Space>` to select the highlighted model. New chats will use the selected model.
 

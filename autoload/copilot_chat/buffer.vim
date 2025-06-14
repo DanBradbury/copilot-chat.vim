@@ -3,9 +3,10 @@ let s:colors_gui = ['#33FF33', '#4DFF33', '#66FF33', '#80FF33', '#99FF33', '#B3F
 let s:colors_cterm = [46, 118, 154, 190, 226, 227, 228, 229, 230]
 let s:color_index = 0
 let s:chat_count = 1
+let s:completion_active = 0
 
 function! copilot_chat#buffer#winsplit() abort
-  let l:position = copilot_chat#config#get('window_position', 'right')
+  let l:position = copilot_chat#config#get_value('window_position', 'right')
 
   " Create split based on position
   if l:position ==# 'right'
@@ -297,6 +298,90 @@ function! copilot_chat#buffer#highlight_code_block(start_line, end_line, lang, b
     let cmd .= ' end=/\%' . (a:end_line + 1) . 'l/'
     let cmd .= ' contains=@' . lang
     execute cmd
+  endif
+endfunction
+
+function! copilot_chat#buffer#check_for_macro() abort
+  let current_line = getline('.')
+  let cursor_pos = col('.')
+  let before_cursor = strpart(current_line, 0, cursor_pos)
+  if current_line =~# '/tab all'
+    " Get the position where the pattern starts
+    let pattern_start = match(before_cursor, '/tab all')
+
+    " Delete the pattern
+    call cursor(line('.'), pattern_start + 1)
+    exec 'normal! d' . len('/tab all') . 'l'
+
+    " Get current buffer number to exclude it
+    let current_bufnr = bufnr('%')
+
+    " Generate list of tabs with #file: prefix, excluding current buffer
+    let tab_list = []
+    for i in range(1, tabpagenr('$'))
+      let buffers = tabpagebuflist(i)
+      for buf in buffers
+        let filename = bufname(buf)
+        " Only add if it's not the current buffer and has a filename
+        if filename !=# '' && filename !~# 'CopilotChat'
+          " Use the relative path format instead of just the base filename
+          let display_name = '#file:' . filename
+          call add(tab_list, display_name)
+        endif
+      endfor
+      "let winnr = tabpagewinnr(i)
+      "let buf_nr = buflist[winnr - 1]
+      "let filename = bufname(buf_nr)
+
+    endfor
+
+    " Insert the tab list at cursor position, one per line
+    if len(tab_list) > 0
+      " Add a newline at the end of the text to be inserted
+      let tabs_text = join(tab_list, "\n") . "\n"
+      exec 'normal! i' . tabs_text
+    else
+      exec "normal! iNo other tabs found\n"
+    endif
+
+    " Position cursor on the empty line
+    call cursor(line('.'), 1)
+  elseif current_line =~# '#file:'
+    if s:completion_active == 1 && !pumvisible()
+      let s:completion_active = 0
+    endif
+    if s:completion_active == 0
+      " TODO: should be resetting this after we do this
+      " let saved_completeopt = &completeopt
+      " call timer_start(0, {-> execute('let &completeopt = "' . saved_completeopt . '"')})
+      set completeopt=menu,menuone,noinsert,noselect
+      let line = getline('.')
+      let start = match(line, '#file:') + 6
+      let typed = strpart(line, start, col('.') - start - 1)
+      if typed !=# '' && filereadable(typed) && !isdirectory(typed)
+        return
+      endif
+
+      let is_git_repo = system('git rev-parse --is-inside-work-tree 2>/dev/null')
+
+      if v:shell_error == 0  " We are in a git repo
+        let files = systemlist('git ls-files --cached --others --exclude-standard')
+      else
+        let files = glob('**/*', 0, 1)
+      endif
+
+      " Filter out directories and prepare completion items
+      let matches = []
+      for file in files
+        if !isdirectory(file) && file =~? typed
+          call add(matches, file)
+        endif
+      endfor
+
+      " Show the completion menu
+      call complete(start+1, matches)
+      let s:completion_active = 1
+    endif
   endif
 endfunction
 

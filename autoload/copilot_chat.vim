@@ -1,7 +1,6 @@
 scriptencoding utf-8
 
 function! copilot_chat#open_chat() abort
-
   call copilot_chat#auth#verify_signin()
 
   if copilot_chat#buffer#has_active_chat() &&
@@ -16,7 +15,7 @@ endfunction
 function! copilot_chat#start_chat(message) abort
   call copilot_chat#open_chat()
   call copilot_chat#buffer#append_message(a:message)
-  call copilot_chat#api#async_request(a:message)
+  call copilot_chat#api#async_request([{'content': a:message, 'role': 'user'}], [])
 endfunction
 
 function! copilot_chat#reset_chat() abort
@@ -44,25 +43,49 @@ function! copilot_chat#reset_chat() abort
 endfunction
 
 function! copilot_chat#submit_message() abort
-  let l:separator_line = search(' ━\+$', 'nw')
-  let l:start_line = l:separator_line + 1
-  let l:end_line = line('$')
+  let l:messages = []
+  let l:responses = []
+  let l:pattern = ' ━\+$'
+  call cursor(1,1)
 
-  let l:lines = getline(l:start_line, l:end_line)
-
-  for l:i in range(len(l:lines))
-    let l:line = l:lines[l:i]
-    if l:line =~? '^> \(\w\+\)'
-      let l:text = matchstr(l:line, '^> \(\w\+\)')
-      let l:text = substitute(l:text, '^> ', '', '')
-      if has_key(g:copilot_chat_prompts, l:text)
-        let l:lines[l:i] = g:copilot_chat_prompts[l:text]
-      endif
+  while search(l:pattern, 'W') > 0
+    let l:header_line = getline('.')
+    let l:role = 'user'
+    if stridx(l:header_line, ' ') != -1
+      let l:role = 'assistant'
     endif
-  endfor
-  let l:message = join(l:lines, "\n")
+    let l:start_line = line('.') + 1
+    let l:end_line = search(l:pattern, 'W')
+    if l:end_line == 0
+      let l:end_line = line('$')
+    else
+      let l:end_line -= 1
+      call cursor(line('.')-1, col('.'))
+    endif
 
-  call copilot_chat#api#async_request(l:message)
+    let l:lines = getline(l:start_line, l:end_line)
+    let l:file_list = []
+
+    for l:i in range(len(l:lines))
+      let l:line = l:lines[l:i]
+      if l:line =~? '^> \(\w\+\)'
+        let l:text = matchstr(l:line, '^> \(\w\+\)')
+        let l:text = substitute(l:text, '^> ', '', '')
+        if has_key(g:copilot_chat_prompts, l:text)
+          let l:lines[l:i] = g:copilot_chat_prompts[l:text]
+        endif
+      elseif l:line =~? '^#file:'
+        let l:filename = matchstr(l:line, '^#file:\s*\zs.*\ze$')
+        call add(l:file_list, l:filename)
+      endif
+    endfor
+    let l:message = join(l:lines, "\n")
+
+    call add(l:messages, {'content': l:message, 'role': l:role})
+    call cursor(line('.'), col('.') + 1)
+  endwhile
+
+  call copilot_chat#api#async_request(l:messages, l:file_list)
 endfunction
 
 function! copilot_chat#http(method, url, headers, body) abort
