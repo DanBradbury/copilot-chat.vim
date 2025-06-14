@@ -20,6 +20,8 @@ function! copilot_chat#buffer#winsplit() abort
   endif
 endfunction
 
+let s:copilot_list_chat_buffer = get(g:, 'copilot_list_chat_buffer', 0)
+
 function! copilot_chat#buffer#create() abort
   call copilot_chat#buffer#winsplit()
 
@@ -29,6 +31,9 @@ function! copilot_chat#buffer#create() abort
   setlocal bufhidden=hide
   setlocal noswapfile
   setlocal filetype=copilot_chat
+  if s:copilot_list_chat_buffer == 0
+    setlocal nobuflisted
+  endif
 
   " Set buffer name
   execute 'file CopilotChat-' . s:chat_count
@@ -83,6 +88,23 @@ function! copilot_chat#buffer#focus_active_chat() abort
   " Not found in current visible windows, so create a new split
   call copilot_chat#buffer#winsplit()
   execute 'buffer ' . g:copilot_chat_active_buffer
+endfunction
+
+let s:copilot_chat_open_on_toggle = get(g:, 'copilot_chat_open_on_toggle', 1)
+function! copilot_chat#buffer#toggle_active_chat() abort
+  if copilot_chat#buffer#has_active_chat() == 0
+    if s:copilot_chat_open_on_toggle == 1
+      call copilot_chat#buffer#create()
+    endif
+    return
+  endif
+
+  let l:current_bufnr = bufnr('%')
+  if l:current_bufnr == g:copilot_chat_active_buffer
+    close
+  else
+    call copilot_chat#buffer#focus_active_chat()
+  endif
 endfunction
 
 function! copilot_chat#buffer#add_input_separator() abort
