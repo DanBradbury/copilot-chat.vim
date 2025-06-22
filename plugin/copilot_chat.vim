@@ -19,6 +19,7 @@ command! -nargs=? -complete=customlist,copilot_chat#history#complete CopilotChat
 command! -nargs=0 CopilotChatList call copilot_chat#history#list()
 command! -nargs=0 CopilotChatReset call copilot_chat#reset_chat()
 command! -nargs=? CopilotChatSetActive call copilot_chat#buffer#set_active(<q-args>)
+command! -nargs=0 CopilotChatToggle call copilot_chat#buffer#toggle_active_chat()
 
 vnoremap <silent> <Plug>CopilotChatAddSelection :<C-u>call copilot_chat#buffer#add_selection()<CR>
 
