@@ -310,7 +310,9 @@ function! copilot_chat#buffer#highlight_code_block(start_line, end_line, lang, b
       if exists('b:current_syntax')
         unlet b:current_syntax
       endif
-      execute 'syntax include @' . lang . ' ' . syntax_file
+      " Use syntax relative path (otherwise may fail on windows)
+      let l:syntaxfile = 'syntax/' . lang . '.vim'
+      execute 'syntax include @' . lang . ' ' . l:syntaxfile
 
       call add(b:added_syntaxes, '@' . lang)
     endif
