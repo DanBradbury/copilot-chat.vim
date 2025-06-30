@@ -1,5 +1,25 @@
 scriptencoding utf-8
 
+let g:buffer_messages = {}
+
+function! copilot_chat#add_assistant_message(message) abort
+  call add(g:buffer_messages[g:copilot_chat_active_buffer], {'content': a:message, 'role': 'assistant'})
+endfunction
+
+function! copilot_chat#add_latest_to_messages() abort
+  normal! G
+  call search(' ━\+$', 'b')
+  " TODO: this should be ported as well
+  let l:role = 'user'
+  let l:start_line = line('.') + 1
+  let l:end_line = line('$')
+
+  let l:lines = getline(l:start_line, l:end_line)
+  let l:message = join(l:lines, "\n")
+
+  call add(g:buffer_messages[g:copilot_chat_active_buffer], {'content': l:message, 'role': l:role})
+endfunction
+
 function! copilot_chat#open_chat() abort
   call copilot_chat#auth#verify_signin()
 
@@ -10,6 +30,7 @@ function! copilot_chat#open_chat() abort
     call copilot_chat#buffer#create()
     normal! G
   endif
+  let g:buffer_messages[g:copilot_chat_active_buffer] = []
 endfunction
 
 function! copilot_chat#start_chat(message) abort
@@ -89,9 +110,11 @@ function! copilot_chat#get_messages() abort
 endfunction
 
 function! copilot_chat#submit_message() abort
-  let [l:messages, l:file_list] = copilot_chat#get_messages()
+  call copilot_chat#add_latest_to_messages()
+  "let [l:messages, l:file_list] = copilot_chat#get_messages()
 
-  call copilot_chat#api#async_request(l:messages, l:file_list)
+  "call copilot_chat#api#async_request(l:messages, l:file_list)
+  call copilot_chat#api#async_request(g:buffer_messages[g:copilot_chat_active_buffer], [])
 endfunction
 
 function! copilot_chat#http(method, url, headers, body) abort
@@ -121,6 +144,7 @@ function! copilot_chat#http(method, url, headers, body) abort
       let l:curl_cmd .= '-H "' . header . '" '
     endfor
     let l:curl_cmd .= "-d '" . l:token_data . "' " . a:url
+    call copilot_chat#log#write(l:curl_cmd)
 
     let l:response = system(l:curl_cmd)
     if v:shell_error != 0
