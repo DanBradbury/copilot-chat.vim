@@ -36,13 +36,6 @@ function! copilot_chat#config#view() abort
   execute 'vsplit ' . s:chat_config_file
 endfunction
 
-let s:mcp_servers = copilot_chat#config#get_value('mcp', {})
-if s:mcp_servers != {}
-  call copilot_chat#log#write('we found mcp servers to load')
-  "call copilot_chat#log#write(s:mcp_servers)
-  call copilot_chat#tools#load_mcp_servers(s:mcp_servers)
-else
-  call copilot_chat#log#write('no mcp servers found')
-endif
+call copilot_chat#tools#load_mcp_servers(copilot_chat#config#get_value('mcp', {}))
 
 " vim:set ft=vim sw=2 sts=2 et:

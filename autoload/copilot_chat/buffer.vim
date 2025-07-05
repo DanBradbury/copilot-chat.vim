@@ -159,8 +159,22 @@ function! copilot_chat#buffer#append_message(message) abort
   call appendbufline(g:copilot_chat_active_buffer, '$', a:message)
 endfunction
 
+function! copilot_chat#buffer#populate_mcp_info() abort
+  call append(0, 'MCP Servers')
+  call append(1, '')
+
+  if exists('g:copilot_chat_mcp_servers')
+    let line_num = 2
+    for server in g:copilot_chat_mcp_servers
+      call append(line_num, server.name)
+      let line_num += 1
+    endfor
+  endif
+endfunction
+
 function! copilot_chat#buffer#welcome_message() abort
   call appendbufline(g:copilot_chat_active_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
+  call copilot_chat#buffer#populate_mcp_info()
   call copilot_chat#buffer#add_input_separator()
 endfunction
 

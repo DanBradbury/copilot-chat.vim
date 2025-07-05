@@ -1,7 +1,8 @@
 scriptencoding utf-8
 
 let s:curl_output = []
-let g:last_tool = '1'
+" XXX: I don't like this but for now its working
+let g:last_tool = {'call_id': '-1', 'server_id': '-1'}
 
 function! copilot_chat#api#async_request(messages, file_list) abort
   let l:chat_token = copilot_chat#auth#verify_signin()
@@ -88,13 +89,24 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
   for line in s:curl_output
     if line =~? '^data: {'
       let l:json_completion = json_decode(line[6:])
+      " MCP Land
       if line =~? 'tool_calls'
         call copilot_chat#log#write("TOOL CALL")
         call copilot_chat#log#write(line)
         if has_key(l:json_completion.choices[0].delta, 'tool_calls') && has_key(l:json_completion.choices[0].delta.tool_calls[0], 'id')
-          let l:function_request = {'type': 'function', 'id': l:json_completion.choices[0].delta.tool_calls[0].id, 'function': {'name': l:json_completion.choices[0].delta.tool_calls[0].function.name}}
-          let g:last_tool = l:json_completion.choices[0].delta.tool_calls[0].id
+          let l:function_name = l:json_completion.choices[0].delta.tool_calls[0].function.name
+
+          call copilot_chat#buffer#append_message('MCP FUNCTION CALL: ' . l:function_name)
+          " fetch the details for the tool
+          let details = copilot_chat#tools#find_server_by_tool_name(l:function_name)
+          let call_id = l:json_completion.id
+          let l:function_request = {'type': 'function', 'id': call_id, 'function': {'name': l:function_name}}
+          let g:last_tool['call_id'] = l:json_completion.id
+          let g:last_tool['server_id'] = details.id
         elseif line =~? 'finish_reason'
+          " XXX: for now we are just always running the function
+          " In the future we should ensure that there is a check for function_name
+          " ...
           " let l:tt = json_decode(l:function_arguments)
           let l:function_request['function']['arguments'] = l:function_arguments
           " XXX/TODO: thinking this has to be moved to a different concept..
