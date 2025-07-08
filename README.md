@@ -190,5 +190,12 @@ function validateUser() {
 ```
 This will send the full template text + your code to Copilot.
 
+## Problems
+
+The following error message means the logged in account does not
+have CoPilot activated:
+
+> Resource not accessible by integration
+
 ## Contributing
 Please see the [contribution guide](./CONTRIBUTING.md) for more information.
