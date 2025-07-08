@@ -1,14 +1,14 @@
 scriptencoding utf-8
 
 function! copilot_chat#open_chat() abort
-  call copilot_chat#auth#verify_signin()
-
-  if copilot_chat#buffer#has_active_chat() &&
-     \  g:copilot_reuse_active_chat == 1
-    call copilot_chat#buffer#focus_active_chat()
-  else
-    call copilot_chat#buffer#create()
+  if copilot_chat#auth#verify_signin() != v:null
+    if copilot_chat#buffer#has_active_chat() &&
+       \  g:copilot_reuse_active_chat == 1
+      call copilot_chat#buffer#focus_active_chat()
+    else
+      call copilot_chat#buffer#create()
     normal! G
+    endif
   endif
 endfunction
 

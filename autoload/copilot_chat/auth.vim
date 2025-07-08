@@ -3,15 +3,17 @@ let s:chat_token_file = g:copilot_chat_data_dir . '/.chat_token'
 
 function! copilot_chat#auth#verify_signin() abort
   let l:chat_token = copilot_chat#auth#get_chat_token(v:false)
-  try
-    call copilot_chat#api#fetch_models(l:chat_token)
-  catch
-    let l:chat_token = copilot_chat#auth#get_chat_token(v:true)
-  endtry
+  if l:chat_token
+    try
+      call copilot_chat#api#fetch_models(l:chat_token)
+    catch
+      let l:chat_token = copilot_chat#auth#get_chat_token(v:true)
+    endtry
+  endif
   return l:chat_token
 endfunction
 
-function! copilot_chat#auth#get_chat_token(fetch_new) abort
+function copilot_chat#auth#get_chat_token(fetch_new) abort
   if filereadable(s:chat_token_file) && a:fetch_new == v:false
     return join(readfile(s:chat_token_file), "\n")
   else
@@ -30,8 +32,13 @@ function! copilot_chat#auth#get_chat_token(fetch_new) abort
       \ }
     let l:response = copilot_chat#http('GET', l:token_url, l:token_headers, l:token_data)
     let l:json_response = json_decode(l:response)
-    let l:chat_token = l:json_response.token
-    call writefile([l:chat_token], s:chat_token_file)
+    try
+      let l:chat_token = l:json_response.token
+      call writefile([l:chat_token], s:chat_token_file)
+    catch
+      echom l:json_response.message
+      return v:null
+    endtry
 
     return l:chat_token
   endif
