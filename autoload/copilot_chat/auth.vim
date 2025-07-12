@@ -13,7 +13,7 @@ function! copilot_chat#auth#verify_signin() abort
   return l:chat_token
 endfunction
 
-function copilot_chat#auth#get_chat_token(fetch_new) abort
+function! copilot_chat#auth#get_chat_token(fetch_new) abort
   if filereadable(s:chat_token_file) && a:fetch_new == v:false
     return join(readfile(s:chat_token_file), "\n")
   else
