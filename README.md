@@ -4,12 +4,15 @@
 
 [![Vint](https://github.com/DanBradbury/copilot-chat.vim/actions/workflows/lint.yml/badge.svg)](https://github.com/DanBradbury/copilot-chat.vim/actions/workflows/lint.yml) [![Test](https://github.com/DanBradbury/copilot-chat.vim/actions/workflows/test.yml/badge.svg)](https://github.com/DanBradbury/copilot-chat.vim/actions/workflows/test.yml)
 
-Copilot Chat functionality without having to leave Vim.
-
-Nvim folks will be able to use [CopilotChat.nvim](https://github.com/CopilotC-Nvim/CopilotChat.nvim) for a similar experience.
-
 ![copilotChat](https://github.com/user-attachments/assets/0cd1119d-89c8-4633-972e-641718e6b24b)
 </div>
+
+Copilot Chat functionality without having to leave Vim. The plugin provides the following:
+- 🤖 GitHub Copilot Chat integration with available models
+- 💾 [Workspace context macros](#tab-all-macro) and [embeddings into chat](#file-macro)
+- 🔒 Only sends what you request; context or visual selection
+- 📝 [Customizable Prompt system with templates and sticky prompts](#using-prompts)
+- 💻 Agentic mode; MCP Tool support, etc
 
 ## Requirements
 
