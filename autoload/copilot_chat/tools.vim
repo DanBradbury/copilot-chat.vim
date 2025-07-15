@@ -37,27 +37,8 @@ function! s:HandleMCPMessage(message)
         call copilot_chat#log#write(a:message['id'])
 
         let l:tools = a:message.result.tools
-        call copilot_chat#tools#update_mcp_servers_by_id(a:message.id, 'tools', l:tools)
-        for l:i in range(len(l:tools))
-            let l:tool = l:tools[l:i]
-            let ff = {"type": "function", "function": {"name": l:tool['name'], 'description': get(l:tool, 'description', 'No description'), 'parameters': {"type": "object", "properties":  {}, "required": []}}}
-            call add(g:mcp_tools, ff)
+        call copilot_chat#tools#add_tools_to_mcp_server(a:message.id, l:tools)
 
-            " Show parameters if available
-            if has_key(l:tool, 'inputSchema') && has_key(l:tool.inputSchema, 'properties')
-                let l:required = get(l:tool.inputSchema, 'required', [])
-                "call s:AppendToBuffer(a:bufnr, ["     Parameters:"])
-
-                for l:prop_name in keys(l:tool.inputSchema.properties)
-                    let l:prop = l:tool.inputSchema.properties[l:prop_name]
-                    let l:req_marker = index(l:required, l:prop_name) >= 0 ? ' (required)' : ''
-                    let l:type_info = get(l:prop, 'type', 'unknown')
-                    "call s:AppendToBuffer(a:bufnr, [
-                        \ "       - " . l:prop_name . ": " . l:type_info . l:req_marker
-                    \ ])
-                endfor
-            endif
-        endfor
         "call s:AppendToBuffer(a:bufnr, [""])
     elseif has_key(a:message, 'result') && has_key(a:message.result, 'content')
       let l:mcp_output = a:message.result.content[0].text
@@ -88,7 +69,71 @@ function! s:build_curl_sse_command(url)
   return l:cmd
 endfunction
 
-"function! s:on_sse_output(job, data)
+function! s:handle_stdio_response(data, server_id) abort
+  let function_call = a:data.id
+  if function_call == 2
+    call copilot_chat#log#write("tools magica")
+    "let l:tools = a:message.result.tools
+    "call copilot_chat#tools#update_mcp_servers_by_id(a:server_id, 'tools', a:data.result.tools)
+    call copilot_chat#tools#add_tools_to_mcp_server(a:server_id, a:data.result.tools)
+  else
+    call copilot_chat#log#write("magica")
+  endif
+endfunction
+
+function! s:on_stdio_output(server_id, job, data)
+  "let l:lines = split(a:data, '\n', 1)
+  call copilot_chat#log#write("on_stdio_ouput" . a:data)
+  call copilot_chat#log#write("on_stdio_ouput" . a:server_id)
+  try
+    call s:handle_stdio_response(json_decode(a:data), a:server_id)
+  catch
+    echom "Error parsing MCP response: " . v:exception
+  endtry
+endfunction
+
+function! s:on_stdio_error(job, data)
+  call copilot_chat#log#write("❌ Stdio Error: " . a:data)
+endfunction
+
+function! s:on_stdio_exit(data, exit_status)
+  call copilot_chat#log#write("🔌 stdio connection closed (exit: " . a:exit_status . ")")
+endfunction
+
+function! s:send_request(request, job) abort
+  let json_str = json_encode(a:request) . "\n"
+  call ch_sendraw(a:job, json_str)
+endfunction
+
+function! s:send_initialize_request(job) abort
+  let request = {
+        \ 'jsonrpc': '2.0',
+        \ 'id': 1,
+        \ 'method': 'initialize',
+        \ 'params': {
+        \   'protocolVersion': '2024-11-05',
+        \   'capabilities': {
+        \     'roots': {'listChanged': v:true},
+        \     'sampling': {}
+        \   },
+        \   'clientInfo': {
+        \     'name': 'vim-mcp-client',
+        \     'version': '1.0.0'
+        \   }
+        \ }
+        \ }
+  call s:send_request(request, a:job)
+
+  "make tools_request
+  let tool_request = {
+        \ 'jsonrpc': '2.0',
+        \ 'id': 2,
+        \ 'method': 'tools/list',
+        \ 'params': {}
+        \ }
+  call s:send_request(tool_request, a:job)
+endfunction
+
 function! s:on_sse_output(extra1, job, data)
   "let l:url = a:context.url
   let l:lines = split(a:data, '\n', 1)
@@ -120,6 +165,30 @@ function! copilot_chat#tools#find_server_by_url(url) abort
     endif
   endfor
   return {}
+endfunction
+
+function! copilot_chat#tools#add_tools_to_mcp_server(server_id, tools) abort
+  call copilot_chat#tools#update_mcp_servers_by_id(a:server_id, 'tools', a:tools)
+  for l:i in range(len(a:tools))
+      let l:tool = a:tools[l:i]
+      let ff = {"type": "function", "function": {"name": l:tool['name'], 'description': get(l:tool, 'description', 'No description'), 'parameters': {"type": "object", "properties":  {}, "required": []}}}
+      call add(g:mcp_tools, ff)
+
+      " Show parameters if available
+      if has_key(l:tool, 'inputSchema') && has_key(l:tool.inputSchema, 'properties')
+          let l:required = get(l:tool.inputSchema, 'required', [])
+          "call s:AppendToBuffer(a:bufnr, ["     Parameters:"])
+
+          for l:prop_name in keys(l:tool.inputSchema.properties)
+              let l:prop = l:tool.inputSchema.properties[l:prop_name]
+              let l:req_marker = index(l:required, l:prop_name) >= 0 ? ' (required)' : ''
+              let l:type_info = get(l:prop, 'type', 'unknown')
+              "call s:AppendToBuffer(a:bufnr, [
+                  \ "       - " . l:prop_name . ": " . l:type_info . l:req_marker
+              \ ])
+          endfor
+      endif
+  endfor
 endfunction
 
 "function! copilot_chat#tools#update_mcp_servers_by_id(id, tool_response) abort
@@ -230,9 +299,8 @@ endfunction
 
 function! s:start_sse_job(details) abort
   let l:cmd = s:build_curl_sse_command(a:details['url'])
-  let url = a:details['id']
   let l:job_options = {
-        \ 'out_cb': function('s:on_sse_output', [url]),
+        \ 'out_cb': function('s:on_sse_output', [a:details['id']]),
         \ 'err_cb': function('s:on_sse_error'),
         \ 'exit_cb': function('s:on_sse_exit'),
         \ 'out_mode': 'raw',
@@ -245,6 +313,22 @@ function! s:start_sse_job(details) abort
   return l:job
 endfunction
 
+function! s:start_command_job(details) abort
+  let cmd = [a:details.cmd]
+  let cmd += a:details.args
+  let job_options = {
+        \ 'out_cb': function('s:on_stdio_output', [a:details['id']]),
+        \ 'err_cb': function('s:on_stdio_error'),
+        \ 'exit_cb': function('s:on_stdio_exit'),
+        \ 'out_mode': 'raw',
+        \ 'err_mode': 'raw'
+  \ }
+  let job = job_start(cmd, job_options)
+  sleep 100m
+  call s:send_initialize_request(job)
+  return job
+endfunction
+
 function! copilot_chat#tools#load_mcp_servers(server_list)
   " TODO: actual format for finding /messages endpoint is not this simple
   " use the ruby example I have to do this same work
@@ -253,12 +337,19 @@ function! copilot_chat#tools#load_mcp_servers(server_list)
   for mcp_server_name in keys(a:server_list)
     call copilot_chat#log#write("TESTING SSE Connection " . l:i)
     let details = a:server_list[mcp_server_name]
-    let url = details['url']
-    " add to the global list for reference
-    let obj = {'name': mcp_server_name, 'url': url, 'id': l:i}
-    let job_id = s:start_sse_job(obj)
+    if has_key(details, 'type')
+      " for now just sse
+      "
+      let url = details['url']
+      " add to the global list for reference
+      let obj = {'name': mcp_server_name, 'url': details.url, 'id': l:i}
+      let job_id = s:start_sse_job(obj)
+    else
+      let obj = {'name': mcp_server_name, 'id': l:i, 'cmd': details.command, 'args': details.args}
+      let job_id = s:start_command_job(obj)
+    endif
     let obj['job_id'] = job_id
     call add(g:copilot_chat_mcp_servers, obj)
-    "let l:i += 1
+    let l:i += 1
   endfor
 endfunction

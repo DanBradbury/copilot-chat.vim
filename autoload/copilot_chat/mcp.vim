@@ -5,6 +5,7 @@ let s:popup_callback = v:null
 function! copilot_chat#mcp#popup_filter(winid, key) abort
   if a:key ==? 'y' || a:key ==? "\<CR>"
     " User confirmed
+    call s:popup_callback()
     call popup_close(a:winid, 'yes')
     return 1
   elseif a:key ==? 'n'
@@ -62,19 +63,20 @@ function! copilot_chat#mcp#apply_popup_syntax(popup_id, tool_name) abort
   call win_execute(a:popup_id, 'syntax match MCPPopupValue /^  [^"]\+$/')
 endfunction
 
-function! copilot_chat#mcp#PromptYesNo()
+function! copilot_chat#mcp#PromptYesNo(func, function_name, server_name)
+  let s:popup_callback = a:func
   "execute 'syntax match SelectedText  /^> .*/'
   "execute 'hi! SelectedText ctermfg=46 guifg=#33FF33'
   "execute 'hi! GreenHighlight ctermfg=green ctermbg=NONE guifg=#33ff33 guibg=NONE'
   "execute 'hi! PopupNormal ctermfg=NONE ctermbg=NONE guifg=NONE guibg=NONE'
   let content = []
   "let question_line = '# Do you want to call ' . a:tool_name . ' on github?'
-  let question_line = '⚡ Do you want to call magic on github?'
+  let question_line = '⚡ Do you want to call ' . a:function_name. ' on ' . a:server_name . '?'
   call add(content, question_line)
   call add(content, '')
 
   " Add parameters with consistent formatting
-  let l:params = {"thing": []}
+  let l:params = {"thing": {"other": [1,2,3]}, "other": 23, "magic": "very magic things"}
   let max_key_length = 0
   for key in keys(l:params)
     if len(key) > max_key_length
@@ -113,7 +115,7 @@ function! copilot_chat#mcp#PromptYesNo()
         \ 'minwidth': 50,
         \ 'filter': 'copilot_chat#mcp#popup_filter',
         \ 'mapping': 0,
-        \ 'title': 'Select Active Model',
+        \ 'title': 'MCP Function Call',
         \ 'close': 'button'
         \ }
   let l:display_items = ['Do you want to call list_issues on github?', '', '{} state:', '    "open"']
@@ -126,3 +128,8 @@ function! copilot_chat#mcp#PromptYesNo()
   "call prop_type_add('highlight', {'highlight': 'GreenHighlight', 'bufnr': l:bufnr})
 endfunction
 
+function! copilot_chat#mcp#function_callback(function_request, function_arguments) abort
+  let a:function_request['function']['arguments'] = a:function_arguments
+  call add(g:buffer_messages[g:copilot_chat_active_buffer], {'role': 'assistant', 'content': '', 'tool_calls': [a:function_request]})
+  let mcp_output = copilot_chat#tools#mcp_function_call(a:function_request['function']['name'])
+endfunction

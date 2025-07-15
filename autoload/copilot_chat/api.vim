@@ -103,28 +103,9 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
           let l:function_request = {'type': 'function', 'id': call_id, 'function': {'name': l:function_name}}
           let g:last_tool['call_id'] = l:json_completion.id
           let g:last_tool['server_id'] = details.id
+          let server_name = details.name
         elseif line =~? 'finish_reason'
-          " XXX: for now we are just always running the function
-          " In the future we should ensure that there is a check for function_name
-          " ...
-          " let l:tt = json_decode(l:function_arguments)
-          let l:function_request['function']['arguments'] = l:function_arguments
-          " XXX/TODO: thinking this has to be moved to a different concept..
-          " technically this gets us close but we need to keep a buffer specific variable here?
-          " if messages was always fetchable on a per buffer basis
-          " {"buf1": [messages], ... }
-          "let [l:messages, l:file_list]  = copilot_chat#get_messages()
-          " TODO: move this out into a service worker..
-          " for now we will just send this back in the messages and pretend that we got some sort of response
-          "call add(l:messages, {'role': 'assistant', 'content': '', 'tool_calls': [l:function_request]})
-          "call add(l:messages, {'role': 'tool', 'content': 'NOTHING FOUND', 'tool_call_id': l:function_request['id']})
-          call add(g:buffer_messages[g:copilot_chat_active_buffer], {'role': 'assistant', 'content': '', 'tool_calls': [l:function_request]})
-          "call copilot_chat#api#async_request(g:buffer_messages[g:copilot_chat_active_buffer], [])
-          "call copilot_chat#api#async_request(l:messages, l:file_list)
-
-          let mcp_output = copilot_chat#tools#mcp_function_call(l:function_request['function']['name'])
-          "call copilot_chat#api#async_request(g:buffer_messages[g:copilot_chat_active_buffer], [])
-          "call add(l:messages, {'role': 'tool', 'content': mcp_output, 'tool_call_id': l:function_request['id']})
+          call copilot_chat#mcp#PromptYesNo(function('copilot_chat#mcp#function_callback', [l:function_request, l:function_arguments]), l:function_request['function']['name'], server_name)
         else
           let l:function_arguments .= l:json_completion.choices[0].delta.tool_calls[0].function.arguments
         endif
