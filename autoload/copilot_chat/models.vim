@@ -13,10 +13,18 @@ function! copilot_chat#models#filter_models(winid, key) abort
     let l:selected_model = s:available_models[g:copilot_popup_selection]
     call copilot_chat#config#set_value(s:model_key, l:selected_model)
     echo l:selected_model . ' set as active model'
-    call popup_close(a:winid)
+    if has('nvim')
+      call nvim_win_close(a:winid, v:true)
+    else
+      call popup_close(a:winid)
+    endif
     return 1
   elseif a:key ==? "\<Esc>" || a:key ==? 'q'
-    call popup_close(a:winid)
+    if has('nvim')
+      call nvim_win_close(a:winid, v:true)
+    else
+      call popup_close(a:winid)
+    endif
     return 1
   endif
 
@@ -25,14 +33,18 @@ function! copilot_chat#models#filter_models(winid, key) abort
   let l:display_items[l:active_model_index] = '* ' . l:display_items[l:active_model_index]
   let l:display_items[g:copilot_popup_selection] = '> ' . l:display_items[g:copilot_popup_selection]
 
-  call popup_settext(a:winid, l:display_items)
-
   let l:bufnr = winbufnr(a:winid)
-  call prop_add(g:copilot_popup_selection + 1, 1, {
-        \ 'type': 'highlight',
-        \ 'length': 60,
-        \ 'bufnr': l:bufnr
-        \ })
+  if has('nvim')
+    call nvim_buf_set_lines(l:bufnr, 0, -1, v:true, l:display_items)
+  else
+    call popup_settext(a:winid, l:display_items)
+
+    call prop_add(g:copilot_popup_selection + 1, 1, {
+          \ 'type': 'highlight',
+          \ 'length': 60,
+          \ 'bufnr': l:bufnr
+          \ })
+  endif
   return 1
 endfunction
 
@@ -63,15 +75,39 @@ function! copilot_chat#models#select() abort
         \ 'title': 'Select Active Model'
         \ }
 
-  let l:popup_id = popup_create(l:display_items, l:options)
+  if has('nvim')
+    let l:bufnr = nvim_create_buf(v:false, v:true)
+    call nvim_buf_set_lines(l:bufnr, 0, -1, v:true, l:display_items)
 
-  let l:bufnr = winbufnr(l:popup_id)
-  call prop_type_add('highlight', {'highlight': 'GreenHighlight', 'bufnr': l:bufnr})
-  call prop_add(g:copilot_popup_selection + 1, 1, {
-        \ 'type': 'highlight',
-        \ 'length': 60,
-        \ 'bufnr': l:bufnr
-        \ })
+    let l:win_opts = {
+          \ 'relative': 'editor',
+          \ 'width': 50,
+          \ 'height': len(l:display_items),
+          \ 'col': (winwidth(0) - 50) / 2,
+          \ 'row': (winheight(0) - len(l:display_items)) / 2,
+          \ 'style': 'minimal',
+          \ 'border': ['┌', '─' ,'┐', '│', '┘', '─', '└', '│']
+          \ }
+    let l:winid = nvim_open_win(l:bufnr, v:true, l:win_opts)
+
+    call nvim_buf_set_keymap(l:bufnr, 'n', 'j', ':call copilot_chat#config#filter_models('.l:winid.', "j")<CR>', {'nowait': v:true, 'noremap': v:true, 'silent': v:true})
+    call nvim_buf_set_keymap(l:bufnr, 'n', 'k', ':call copilot_chat#config#filter_models('.l:winid.', "k")<CR>', {'nowait': v:true, 'noremap': v:true, 'silent': v:true})
+    call nvim_buf_set_keymap(l:bufnr, 'n', '<Down>', ':call copilot_chat#config#filter_models('.l:winid.', "\<lt>Down>")<CR>', {'nowait': v:true, 'noremap': v:true, 'silent': v:true})
+    call nvim_buf_set_keymap(l:bufnr, 'n', '<Up>', ':call copilot_chat#config#filter_models('.l:winid.', "\<lt>Up>")<CR>', {'nowait': v:true, 'noremap': v:true, 'silent': v:true})
+    call nvim_buf_set_keymap(l:bufnr, 'n', '<CR>', ':call copilot_chat#config#filter_models('.l:winid.', "\<lt>CR>")<CR>', {'nowait': v:true, 'noremap': v:true, 'silent': v:true})
+    call nvim_buf_set_keymap(l:bufnr, 'n', 'q', ':call copilot_chat#config#filter_models('.l:winid.', "q")<CR>', {'nowait': v:true, 'noremap': v:true, 'silent': v:true})
+    call nvim_buf_set_keymap(l:bufnr, 'n', '<Esc>', ':call copilot_chat#config#filter_models('.l:winid.', "\<lt>Esc>")<CR>', {'nowait': v:true, 'noremap': v:true, 'silent': v:true})
+  else
+    let l:popup_id = popup_create(l:display_items, l:options)
+
+    let l:bufnr = winbufnr(l:popup_id)
+    call prop_type_add('highlight', {'highlight': 'GreenHighlight', 'bufnr': l:bufnr})
+    call prop_add(g:copilot_popup_selection + 1, 1, {
+          \ 'type': 'highlight',
+          \ 'length': 60,
+          \ 'bufnr': l:bufnr
+          \ })
+  endif
 endfunction
 
 let s:default_model = 'gpt-4o'
