@@ -3,13 +3,11 @@ let s:chat_token_file = g:copilot_chat_data_dir . '/.chat_token'
 
 function! copilot_chat#auth#verify_signin() abort
   let l:chat_token = copilot_chat#auth#get_chat_token(v:false)
-  if l:chat_token
-    try
-      call copilot_chat#api#fetch_models(l:chat_token)
-    catch
-      let l:chat_token = copilot_chat#auth#get_chat_token(v:true)
-    endtry
-  endif
+  try
+    call copilot_chat#api#fetch_models(l:chat_token)
+  catch
+    let l:chat_token = copilot_chat#auth#get_chat_token(v:true)
+  endtry
   return l:chat_token
 endfunction
 
