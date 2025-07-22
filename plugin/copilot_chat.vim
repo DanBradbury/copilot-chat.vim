@@ -1,3 +1,8 @@
+if exists('g:loaded_copilot_chat')
+  finish
+endif
+let g:loaded_copilot_chat = 1
+
 scriptencoding utf-8
 
 let g:copilot_chat_prompts = {}
