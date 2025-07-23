@@ -90,12 +90,36 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
     endif
   endfor
 
+  let l:response = split(l:result, "\n")
   let l:width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
+
   let l:separator = ' '
   let l:separator .= repeat('━', l:width)
+  let l:response_start = line('$') + 1
+
   call copilot_chat#buffer#append_message(l:separator)
-  call copilot_chat#buffer#append_message(split(l:result, "\n"))
+  call copilot_chat#buffer#append_message(l:response)
   call copilot_chat#buffer#add_input_separator()
+
+  let l:wrap_width = l:width + 2
+  let l:softwrap_lines = 0
+  for line in l:response
+    if strwidth(line) > l:wrap_width
+      let l:softwrap_lines += ceil(strwidth(line) / l:wrap_width)
+    else
+      let l:softwrap_lines += 1
+    endif
+  endfor
+
+  let l:total_response_length = l:softwrap_lines + 2
+  let l:height = winheight(0)
+  if l:total_response_length >= l:height
+    execute 'normal! ' . l:response_start . 'Gzt'
+  else
+    execute 'normal! G'
+  endif
+  call setcursorcharpos(0, 3)
+
 endfunction
 
 function! copilot_chat#api#handle_job_error(channel, msg) abort
