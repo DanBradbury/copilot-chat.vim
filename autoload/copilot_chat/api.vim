@@ -105,7 +105,7 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
           let g:last_tool['server_id'] = details.id
           let server_name = details.name
         elseif line =~? 'finish_reason'
-          call copilot_chat#mcp#PromptYesNo(function('copilot_chat#mcp#function_callback', [l:function_request, l:function_arguments]), l:function_request['function']['name'], server_name)
+          call copilot_chat#mcp#function_call_prompt(function('copilot_chat#mcp#function_callback', [l:function_request, l:function_arguments]), l:function_request['function']['name'], server_name)
         else
           let l:function_arguments .= l:json_completion.choices[0].delta.tool_calls[0].function.arguments
         endif

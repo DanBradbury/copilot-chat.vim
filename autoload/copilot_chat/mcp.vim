@@ -63,14 +63,9 @@ function! copilot_chat#mcp#apply_popup_syntax(popup_id, tool_name) abort
   call win_execute(a:popup_id, 'syntax match MCPPopupValue /^  [^"]\+$/')
 endfunction
 
-function! copilot_chat#mcp#PromptYesNo(func, function_name, server_name)
-  let s:popup_callback = a:func
-  "execute 'syntax match SelectedText  /^> .*/'
-  "execute 'hi! SelectedText ctermfg=46 guifg=#33FF33'
-  "execute 'hi! GreenHighlight ctermfg=green ctermbg=NONE guifg=#33ff33 guibg=NONE'
-  "execute 'hi! PopupNormal ctermfg=NONE ctermbg=NONE guifg=NONE guibg=NONE'
+function! copilot_chat#mcp#function_call_prompt(success_callback, function_name, server_name, function_args)
+  let s:popup_callback = a:success_callback
   let content = []
-  "let question_line = '# Do you want to call ' . a:tool_name . ' on github?'
   let question_line = '⚡ Do you want to call ' . a:function_name. ' on ' . a:server_name . '?'
   call add(content, question_line)
   call add(content, '')
@@ -125,7 +120,6 @@ function! copilot_chat#mcp#PromptYesNo(func, function_name, server_name)
   call copilot_chat#mcp#apply_popup_syntax(l:popup_id, 'magic')
 
   let l:bufnr = winbufnr(l:popup_id)
-  "call prop_type_add('highlight', {'highlight': 'GreenHighlight', 'bufnr': l:bufnr})
 endfunction
 
 function! copilot_chat#mcp#function_callback(function_request, function_arguments) abort

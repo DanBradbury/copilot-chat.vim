@@ -151,10 +151,13 @@ function! s:on_sse_error(job, data)
   call copilot_chat#log#write("❌ SSE Error: " . a:data)
 endfunction
 
-function! s:on_sse_exit(job, exit_status)
-  call copilot_chat#log#write("🔌 SSE connection closed (exit: " . a:exit_status . ")")
-  if has_key(s:sse_jobs, a:bufnr)
-    unlet s:sse_jobs[a:bufnr]
+"function! s:on_sse_exit(job, exit_status)
+function! s:on_sse_exit(extra1, job, exit_status)
+  call copilot_chat#log#write("🔌 SSE connection closed (exit: " . a:exit_status . ")" . a:extra1)
+  " TODO: this should be handled for all types of MCP Servers
+  if has_key(s:sse_jobs, a:extra1)
+    call copilot_chat#log#write("unletting the job")
+    unlet s:sse_jobs[a:extra1]
   endif
 endfunction
 
@@ -302,7 +305,7 @@ function! s:start_sse_job(details) abort
   let l:job_options = {
         \ 'out_cb': function('s:on_sse_output', [a:details['id']]),
         \ 'err_cb': function('s:on_sse_error'),
-        \ 'exit_cb': function('s:on_sse_exit'),
+        \ 'exit_cb': function('s:on_sse_exit', [a:details['id']]),
         \ 'out_mode': 'raw',
         \ 'err_mode': 'raw'
   \ }
