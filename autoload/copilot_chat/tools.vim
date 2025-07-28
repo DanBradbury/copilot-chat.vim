@@ -127,7 +127,7 @@ function! s:send_initialize_request(job) abort
   "make tools_request
   let tool_request = {
         \ 'jsonrpc': '2.0',
-        \ 'id': 2,
+        \ 'id': 1,
         \ 'method': 'tools/list',
         \ 'params': {}
         \ }
@@ -212,7 +212,7 @@ endfunction
 
 function! copilot_chat#tools#update_server_tools_by_url(url, tool_response) abort
   for server in g:copilot_chat_mcp_servers
-    if server.url ==# a:url
+    if has_key(server, "url") && server.url ==# a:url
       call copilot_chat#log#write('found a match and updating')
       let server.tools = a:tool_response
       return server
@@ -300,6 +300,47 @@ function! s:ProcessSSELine(line, details)
     endif
 endfunction
 
+function! s:start_http_server(details) abort
+  "let l:cmd = s:build_curl_http_command(a:details.url)
+  call copilot_chat#log#write("Starting HTTP Request" . a:details.url)
+  let request = {
+        \ 'jsonrpc': '2.0',
+        \ 'id': 1,
+        \ 'method': 'initialize',
+        \ 'params': {
+        \   'protocolVersion': '2024-11-05',
+        \   'capabilities': {
+        \     'roots': {'listChanged': v:true},
+        \     'sampling': {}
+        \   },
+        \   'clientInfo': {
+        \     'name': 'vim-mcp-client',
+        \     'version': '1.0.0'
+        \   }
+        \ }
+        \ }
+  let init_request = copilot_chat#http('POST', a:details.url, ['Content-Type: application/json', 'Accept: application/json,text/event-stream'], request)
+  call copilot_chat#log#write("Init request" . init_request)
+
+  "make tools_request
+  let tool_request = {
+        \ 'jsonrpc': '2.0',
+        \ 'id': 1,
+        \ 'method': 'tools/list',
+        \ 'params': {}
+        \ }
+  let tool_response = copilot_chat#http('POST', a:details.url, ['Content-Type: application/json', 'Accept: application/json,text/event-stream'], tool_request)
+  call copilot_chat#log#write("Tool response " .tool_response)
+  "call copilot_chat#tools#update_server_tools_by_url(a:details.url, tool_response)
+  "call copilot_chat#tools#add_tools_to_mcp_server(1, tool_response)
+  call copilot_chat#tools#update_mcp_servers_by_id(1, 'tools', tool_response)
+  "call s:send_request(tool_request, a:job)
+
+  "call timer_start(2000, function('s:send_tools_list_request', [a:details.id]))
+  "return l:job
+  return 1
+endfunction
+
 function! s:start_sse_job(details) abort
   let l:cmd = s:build_curl_sse_command(a:details['url'])
   let l:job_options = {
@@ -341,12 +382,18 @@ function! copilot_chat#tools#load_mcp_servers(server_list)
     call copilot_chat#log#write("TESTING SSE Connection " . l:i)
     let details = a:server_list[mcp_server_name]
     if has_key(details, 'type')
+      let url = details['url']
+      if details.type == "sse"
+        " add to the global list for reference
+        let obj = {'name': mcp_server_name, 'url': details.url, 'id': l:i}
+        let job_id = s:start_sse_job(obj)
+      elseif details.type == "http"
+        " add to the global list for reference
+        let obj = {'name': mcp_server_name, 'url': details.url, 'id': l:i}
+        let job_id = s:start_http_server(obj)
+      endif
       " for now just sse
       "
-      let url = details['url']
-      " add to the global list for reference
-      let obj = {'name': mcp_server_name, 'url': details.url, 'id': l:i}
-      let job_id = s:start_sse_job(obj)
     else
       let obj = {'name': mcp_server_name, 'id': l:i, 'cmd': details.command, 'args': details.args}
       let job_id = s:start_command_job(obj)
