@@ -71,7 +71,7 @@ function! copilot_chat#mcp#function_call_prompt(success_callback, function_name,
   call add(content, '')
 
   " Add parameters with consistent formatting
-  let l:params = {"thing": {"other": [1,2,3]}, "other": 23, "magic": "very magic things"}
+  let l:params = json_decode(a:function_args)
   let max_key_length = 0
   for key in keys(l:params)
     if len(key) > max_key_length

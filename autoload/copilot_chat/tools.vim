@@ -17,12 +17,21 @@ function! copilot_chat#tools#mcp_function_call(function_name) abort
     \ }
     "let l:function_url = copilot_chat#tools#find_by_name(a:function_name).url
     let server = copilot_chat#tools#find_server_by_tool_name(a:function_name)
-    let endpoint = s:base_url(server['url']) . server['endpoint']
-    let cleaned_endpoint = substitute(endpoint, '?', '', '')
-    call copilot_chat#log#write(cleaned_endpoint)
+    if has_key(server, 'command')
+      echom "checking command"
+    elseif has_key(server, "type")
+      if server.type == "sse"
+        let endpoint = s:base_url(server['url']) . server['endpoint']
+        let cleaned_endpoint = substitute(endpoint, '?', '', '')
+        let tools_response = copilot_chat#http('POST', cleaned_endpoint, ['Content-Type: application/json'], l:request)
+        call copilot_chat#log#write("MCP FUNCTION CALL")
+        call copilot_chat#log#write(cleaned_endpoint)
+      else
+        let tools_response = copilot_chat#http('POST', server.url, ['Content-Type: application/json', 'Accept: application/json,text/event-stream'], l:request)
+        call s:HandleMCPMessage(json_decode(tools_response))
+      endif
+    endif
 
-    let tools_response = copilot_chat#http('POST', cleaned_endpoint, ['Content-Type: application/json'], l:request)
-    call copilot_chat#log#write("MCP FUNCTION CALL")
     return tools_response
 endfunction
 
@@ -223,16 +232,22 @@ function! copilot_chat#tools#update_server_tools_by_url(url, tool_response) abor
 endfunction
 
 function! copilot_chat#tools#find_server_by_tool_name(tool_name) abort
+  let l:m = {}
+  call copilot_chat#log#write('tool name: ' . a:tool_name)
   for server in g:copilot_chat_mcp_servers
     " iterate over the tools in each server and return if we find a match
-    for tool in server.tools
-      if tool.name ==# a:tool_name
-        return server
-      endif
-    endfor
+    if has_key(server, "tools")
+      for tool in server.tools
+        if tool.name == a:tool_name
+          let l:m = server
+          "return server
+        endif
+      endfor
+    endif
   endfor
 
-  return {}
+  call copilot_chat#log#write('mm' . json_encode(l:m))
+  return l:m
 endfunction
 
 function! s:send_tools_list_request(arg1, timer_id) abort
@@ -300,6 +315,18 @@ function! s:ProcessSSELine(line, details)
     endif
 endfunction
 
+function! s:http_tools_list(url, det) abort
+  let tool_request = {
+        \ 'jsonrpc': '2.0',
+        \ 'id': 2,
+        \ 'method': 'tools/list',
+        \ 'params': {}
+        \ }
+  let tool_response = copilot_chat#http('POST', a:url, ['Content-Type: application/json', 'Accept: application/json,text/event-stream'], tool_request)
+  call copilot_chat#log#write("Tool response " .tool_response)
+  call copilot_chat#tools#add_tools_to_mcp_server(2, json_decode(tool_response).result.tools)
+endfunction
+
 function! s:start_http_server(details) abort
   "let l:cmd = s:build_curl_http_command(a:details.url)
   call copilot_chat#log#write("Starting HTTP Request" . a:details.url)
@@ -323,17 +350,7 @@ function! s:start_http_server(details) abort
   call copilot_chat#log#write("Init request" . init_request)
 
   "make tools_request
-  let tool_request = {
-        \ 'jsonrpc': '2.0',
-        \ 'id': 1,
-        \ 'method': 'tools/list',
-        \ 'params': {}
-        \ }
-  let tool_response = copilot_chat#http('POST', a:details.url, ['Content-Type: application/json', 'Accept: application/json,text/event-stream'], tool_request)
-  call copilot_chat#log#write("Tool response " .tool_response)
-  "call copilot_chat#tools#update_server_tools_by_url(a:details.url, tool_response)
-  "call copilot_chat#tools#add_tools_to_mcp_server(1, tool_response)
-  call copilot_chat#tools#update_mcp_servers_by_id(1, 'tools', tool_response)
+  call timer_start(2000, function('s:http_tools_list', [a:details.url]))
   "call s:send_request(tool_request, a:job)
 
   "call timer_start(2000, function('s:send_tools_list_request', [a:details.id]))
@@ -385,11 +402,11 @@ function! copilot_chat#tools#load_mcp_servers(server_list)
       let url = details['url']
       if details.type == "sse"
         " add to the global list for reference
-        let obj = {'name': mcp_server_name, 'url': details.url, 'id': l:i}
+        let obj = {'name': mcp_server_name, 'url': details.url, 'id': l:i, 'type': 'sse'}
         let job_id = s:start_sse_job(obj)
       elseif details.type == "http"
         " add to the global list for reference
-        let obj = {'name': mcp_server_name, 'url': details.url, 'id': l:i}
+        let obj = {'name': mcp_server_name, 'url': details.url, 'id': l:i, 'type': 'http'}
         let job_id = s:start_http_server(obj)
       endif
       " for now just sse
