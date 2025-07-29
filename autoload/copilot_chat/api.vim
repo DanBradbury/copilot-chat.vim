@@ -158,7 +158,7 @@ function! copilot_chat#api#fetch_models(chat_token) abort
     \ 'Editor-Version: vscode/1.80.1'
     \ ]
 
-  let l:response = copilot_chat#http('GET', 'https://api.githubcopilot.com/models', l:chat_headers, {})
+  let l:response = copilot_chat#http('GET', 'https://api.githubcopilot.com/models', l:chat_headers, {})[0]
   try
     let l:json_response = json_decode(l:response)
     let l:model_list = []

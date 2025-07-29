@@ -143,16 +143,35 @@ function! copilot_chat#http(method, url, headers, body) abort
     for header in a:headers
       let l:curl_cmd .= '-H "' . header . '" '
     endfor
-    let l:curl_cmd .= "-d '" . l:token_data . "' " . a:url
+    let l:curl_cmd .= "-d '" . l:token_data . "' " . a:url . ' -D headers.txt'
     call copilot_chat#log#write(l:curl_cmd)
 
     let l:response = system(l:curl_cmd)
+    let l:headers_raw = system('cat headers.txt')
+    let l:lines = split(l:headers_raw, '\n')
+
+    " Initialize an empty dictionary to store header key/values
+    let l:headers_dict = {}
+
+    " Iterate over each line
+    for l:line in l:lines
+        " Skip empty lines or lines that don't contain a colon
+        if l:line =~ ':'
+            " Split the line into key and value
+            let l:parts = split(l:line, ':', 2)
+            " Trim whitespace from key and value
+            let l:key = trim(l:parts[0])
+            let l:value = trim(l:parts[1])
+            " Add the key/value pair to the dictionary
+            let l:headers_dict[l:key] = l:value
+        endif
+    endfor
     if v:shell_error != 0
       echom 'Error: ' . v:shell_error
       return ''
     endif
   endif
-  return l:response
+  return [l:response, l:headers_dict]
 endfunction
 
 " vim:set ft=vim sw=2 sts=2 et:
