@@ -375,7 +375,6 @@ function! s:start_http_server(details) abort
   let session_id = v:null
   if has_key(init_request[1], 'mcp-session-id')
     let session_id = init_request[1]['mcp-session-id']
-    echom 'we in it' . a:details.id . '   ' . session_id
     let g:copilot_chat_mcp_servers[a:details.id - 1]['session-id'] = session_id
   endif
   call copilot_chat#log#write("Init request" . init_request[0])

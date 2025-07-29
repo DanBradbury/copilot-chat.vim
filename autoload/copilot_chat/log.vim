@@ -76,7 +76,7 @@ endfunction
 
 " Function to write log messages to the custom buffer
 function! copilot_chat#log#write(message)
-  if g:copilot_chat_log_bufnr == -1 || !bufexists(g:copilot_chat_log_bufnr)
+  if exists("g:copilot_chat_debug") && (g:copilot_chat_log_bufnr == -1 || !bufexists(g:copilot_chat_log_bufnr))
     let current_win = win_getid()
     execute 'botright new copilot-chat-log'
     let g:copilot_chat_log_bufnr = bufnr('%')
