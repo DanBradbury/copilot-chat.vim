@@ -166,7 +166,15 @@ function! copilot_chat#buffer#populate_mcp_info() abort
   if exists('g:copilot_chat_mcp_servers')
     let line_num = 2
     for server in g:copilot_chat_mcp_servers
-      call append(line_num, server.name)
+      let status_icon = '⏳'
+      if has_key(server, 'status')
+        if server.status == 'success'
+          let status_icon = '✅'
+        elseif server.status == 'failed'
+          let status_icon = '❌'
+        endif
+      endif
+      call append(line_num, status_icon . ' ' . server.name)
       let line_num += 1
     endfor
   endif

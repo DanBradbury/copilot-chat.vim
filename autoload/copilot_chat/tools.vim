@@ -56,6 +56,7 @@ function! s:HandleMCPMessage(message)
 
         let l:tools = a:message.result.tools
         call copilot_chat#tools#add_tools_to_mcp_server(a:message.id, l:tools)
+        call copilot_chat#tools#update_mcp_servers_by_id(a:message.id, 'status', 'success')
 
         "call s:AppendToBuffer(a:bufnr, [""])
     elseif has_key(a:message, 'result') && has_key(a:message.result, 'content')
@@ -72,6 +73,7 @@ function! s:HandleMCPMessage(message)
 
     " Handle errors
     if has_key(a:message, 'error')
+        call copilot_chat#tools#update_mcp_servers_by_id(a:message.id, 'status', 'failed')
         "call s:AppendToBuffer(a:bufnr, [
             "\ "❌ MCP Error: " . a:message.error.message . " (Code: " . a:message.error.code . ")"
         "\ ])
@@ -94,6 +96,7 @@ function! s:handle_stdio_response(data, server_id) abort
   call copilot_chat#log#write("tools magicaff" . json_encode(a:data))
   if has_key(a:data.result, 'tools')
     call copilot_chat#tools#add_tools_to_mcp_server(a:server_id, a:data.result.tools)
+    call copilot_chat#tools#update_mcp_servers_by_id(a:server_id, 'status', 'success')
   endif
 endfunction
 
@@ -108,12 +111,16 @@ function! s:on_stdio_output(server_id, job, data)
   endtry
 endfunction
 
-function! s:on_stdio_error(job, data)
+function! s:on_stdio_error(server_id, job, data)
   call copilot_chat#log#write("❌ Stdio Error: " . a:data)
+  call copilot_chat#tools#update_mcp_servers_by_id(a:server_id, 'status', 'failed')
 endfunction
 
-function! s:on_stdio_exit(data, exit_status)
+function! s:on_stdio_exit(server_id, data, exit_status)
   call copilot_chat#log#write("🔌 stdio connection closed (exit: " . a:exit_status . ")")
+  if a:exit_status != 0
+    call copilot_chat#tools#update_mcp_servers_by_id(a:server_id, 'status', 'failed')
+  endif
 endfunction
 
 function! s:send_request(request, job) abort
@@ -163,8 +170,9 @@ function! s:on_sse_output(extra1, job, data)
   endfor
 endfunction
 
-function! s:on_sse_error(job, data)
+function! s:on_sse_error(server_id, job, data)
   call copilot_chat#log#write("❌ SSE Error: " . a:data)
+  call copilot_chat#tools#update_mcp_servers_by_id(a:server_id, 'status', 'failed')
 endfunction
 
 "function! s:on_sse_exit(job, exit_status)
@@ -340,10 +348,15 @@ function! s:http_tools_list(server_id, det) abort
         \ 'method': 'tools/list',
         \ 'params': {}
         \ }
-  let tool_response = copilot_chat#tools#mcp_http_request('POST', server, tool_request)[0]
-  "let tool_response = copilot_chat#http('POST', server.url, ['Content-Type: application/json', 'Accept: application/json,text/event-stream'], tool_request)[0]
-  call copilot_chat#log#write("Tool response " .tool_response)
-  call copilot_chat#tools#add_tools_to_mcp_server(a:server_id, json_decode(tool_response).result.tools)
+  try
+    let tool_response = copilot_chat#tools#mcp_http_request('POST', server, tool_request)[0]
+    "let tool_response = copilot_chat#http('POST', server.url, ['Content-Type: application/json', 'Accept: application/json,text/event-stream'], tool_request)[0]
+    call copilot_chat#log#write("Tool response " .tool_response)
+    call copilot_chat#tools#add_tools_to_mcp_server(a:server_id, json_decode(tool_response).result.tools)
+    call copilot_chat#tools#update_mcp_servers_by_id(a:server_id, 'status', 'success')
+  catch
+    call copilot_chat#tools#update_mcp_servers_by_id(a:server_id, 'status', 'failed')
+  endtry
 endfunction
 
 function! copilot_chat#tools#mcp_http_request(method, details, request_body, session_id=v:null) abort
@@ -381,23 +394,28 @@ function! s:start_http_server(details) abort
         \   }
         \ }
         \ }
-  "let init_request = copilot_chat#http('POST', a:details.url, request_headers, request)[0]
-  let init_request = copilot_chat#tools#mcp_http_request('POST', a:details, request)
-  if s:is_valid_json(init_request) && has_key(init_request[1], 'mcp-session-id')
-    let session_id = init_request[1]['mcp-session-id']
-    let g:copilot_chat_mcp_servers[a:details.id - 1]['session-id'] = session_id
-    call copilot_chat#log#write("Init request" . init_request[0])
+  try
+    "let init_request = copilot_chat#http('POST', a:details.url, request_headers, request)[0]
+    let init_request = copilot_chat#tools#mcp_http_request('POST', a:details, request)
+    if s:is_valid_json(init_request) && has_key(init_request[1], 'mcp-session-id')
+      let session_id = init_request[1]['mcp-session-id']
+      let g:copilot_chat_mcp_servers[a:details.id - 1]['session-id'] = session_id
+      call copilot_chat#log#write("Init request" . init_request[0])
 
-    let post_init_request = {
-          \ "jsonrpc": "2.0",
-          \ "method": "notifications/initialized"
-          \ }
-    let ready_response = copilot_chat#tools#mcp_http_request('POST', a:details, post_init_request, session_id)[0]
-    call copilot_chat#log#write("ready response" . ready_response)
-    call timer_start(2000, function('s:http_tools_list', [a:details.id]))
-  else
-    echom "failed to init mcp server"
-  endif
+      let post_init_request = {
+            \ "jsonrpc": "2.0",
+            \ "method": "notifications/initialized"
+            \ }
+      let ready_response = copilot_chat#tools#mcp_http_request('POST', a:details, post_init_request, session_id)[0]
+      call copilot_chat#log#write("ready response" . ready_response)
+      call timer_start(2000, function('s:http_tools_list', [a:details.id]))
+    else
+      echom "failed to init mcp server"
+      call copilot_chat#tools#update_mcp_servers_by_id(a:details.id, 'status', 'failed')
+    endif
+  catch
+    call copilot_chat#tools#update_mcp_servers_by_id(a:details.id, 'status', 'failed')
+  endtry
 
   return 1
 endfunction
@@ -406,7 +424,7 @@ function! s:start_sse_job(details) abort
   let l:cmd = s:build_curl_sse_command(a:details['url'])
   let l:job_options = {
         \ 'out_cb': function('s:on_sse_output', [a:details['id']]),
-        \ 'err_cb': function('s:on_sse_error'),
+        \ 'err_cb': function('s:on_sse_error', [a:details['id']]),
         \ 'exit_cb': function('s:on_sse_exit', [a:details['id']]),
         \ 'out_mode': 'raw',
         \ 'err_mode': 'raw'
@@ -423,8 +441,8 @@ function! s:start_command_job(details) abort
   let cmd += a:details.args
   let job_options = {
         \ 'out_cb': function('s:on_stdio_output', [a:details['id']]),
-        \ 'err_cb': function('s:on_stdio_error'),
-        \ 'exit_cb': function('s:on_stdio_exit'),
+        \ 'err_cb': function('s:on_stdio_error', [a:details['id']]),
+        \ 'exit_cb': function('s:on_stdio_exit', [a:details['id']]),
         \ 'out_mode': 'raw',
         \ 'err_mode': 'raw'
   \ }
@@ -443,7 +461,7 @@ function! copilot_chat#tools#load_mcp_servers(server_list)
     let details = a:server_list[mcp_server_name]
     call copilot_chat#log#write("loading" . mcp_server_name . " : " . l:i)
     if has_key(details, 'type')
-      let obj = {'name': mcp_server_name, 'url': details.url, 'id': l:i}
+      let obj = {'name': mcp_server_name, 'url': details.url, 'id': l:i, 'status': 'pending'}
       " add headers if present in config
       if has_key(details, 'headers')
         let obj['headers'] = details.headers
@@ -464,7 +482,7 @@ function! copilot_chat#tools#load_mcp_servers(server_list)
       " for now just sse
       "
     else
-      let obj = {'name': mcp_server_name, 'id': l:i, 'cmd': details.command, 'args': details.args}
+      let obj = {'name': mcp_server_name, 'id': l:i, 'cmd': details.command, 'args': details.args, 'status': 'pending'}
       let job_id = s:start_command_job(obj)
       call add(g:copilot_chat_mcp_servers, obj)
     endif
