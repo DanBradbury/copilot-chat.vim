@@ -2,6 +2,15 @@ let g:mcp_tools = []
 let s:sse_jobs = {}
 let s:mcp_messages = []
 
+function! s:is_valid_json(str)
+  try
+    call json_decode(a:str)
+    return 1
+  catch
+    return 0
+  endtry
+endfunction
+
 "XXX: cleanup later
 function! s:base_url(url) abort
   return substitute(a:url, '\(https\?://[^/]\+\).*', '\1', '')
@@ -83,7 +92,9 @@ function! s:handle_stdio_response(data, server_id) abort
   let function_call = a:data.id
   call copilot_chat#log#write("tools magica" . a:server_id)
   call copilot_chat#log#write("tools magicaff" . json_encode(a:data))
-  call copilot_chat#tools#add_tools_to_mcp_server(a:server_id, a:data.result.tools)
+  if has_key(a:data.result, 'tools')
+    call copilot_chat#tools#add_tools_to_mcp_server(a:server_id, a:data.result.tools)
+  endif
 endfunction
 
 function! s:on_stdio_output(server_id, job, data)
@@ -372,24 +383,21 @@ function! s:start_http_server(details) abort
         \ }
   "let init_request = copilot_chat#http('POST', a:details.url, request_headers, request)[0]
   let init_request = copilot_chat#tools#mcp_http_request('POST', a:details, request)
-  let session_id = v:null
-  if has_key(init_request[1], 'mcp-session-id')
+  if s:is_valid_json(init_request) && has_key(init_request[1], 'mcp-session-id')
     let session_id = init_request[1]['mcp-session-id']
     let g:copilot_chat_mcp_servers[a:details.id - 1]['session-id'] = session_id
+    call copilot_chat#log#write("Init request" . init_request[0])
+
+    let post_init_request = {
+          \ "jsonrpc": "2.0",
+          \ "method": "notifications/initialized"
+          \ }
+    let ready_response = copilot_chat#tools#mcp_http_request('POST', a:details, post_init_request, session_id)[0]
+    call copilot_chat#log#write("ready response" . ready_response)
+    call timer_start(2000, function('s:http_tools_list', [a:details.id]))
+  else
+    echom "failed to init mcp server"
   endif
-  call copilot_chat#log#write("Init request" . init_request[0])
-
-  " we got a response
-  let post_init_request = {
-        \ "jsonrpc": "2.0",
-        \ "method": "notifications/initialized"
-        \ }
-  let ready_response = copilot_chat#tools#mcp_http_request('POST', a:details, post_init_request, session_id)[0]
-  call copilot_chat#log#write("ready response" . ready_response)
-
-  "make tools_request
-  call timer_start(2000, function('s:http_tools_list', [a:details.id]))
-  "call s:http_tools_list(json_encode(a:details))
 
   return 1
 endfunction
