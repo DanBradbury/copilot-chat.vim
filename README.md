@@ -5,8 +5,18 @@
 [![Vint](https://github.com/DanBradbury/copilot-chat.vim/actions/workflows/lint.yml/badge.svg)](https://github.com/DanBradbury/copilot-chat.vim/actions/workflows/lint.yml) [![Test](https://github.com/DanBradbury/copilot-chat.vim/actions/workflows/test.yml/badge.svg)](https://github.com/DanBradbury/copilot-chat.vim/actions/workflows/test.yml)
 
 Copilot Chat functionality without having to leave Vim.
+</div>
 
-Nvim folks will be able to use [CopilotChat.nvim](https://github.com/CopilotC-Nvim/CopilotChat.nvim) for a similar experience.
+- 🤖 **[Quick Model Selection](#model-selection)** - Choose from different Copilot AI models for varied responses
+- 📁 **[File Integration](#add-selection-to-chat)** - Add code selections to chat with automatic syntax highlighting
+- 💾 **[Chat History](#chat-history)** - Save, load, and manage your conversation history
+- 🔧 **[Custom Prompts](#prompt-templates)** - Create reusable prompt templates for common tasks
+- 📋 **[Autocomplete Macros](#autocomplete-macros)** - Smart file path completion and tab expansion
+- 🔌 **[MCP Server Support](#mcp-server-support)** - Extend capabilities with Model Context Protocol servers
+- ⚙️ **Configurable** - Customize behavior through JSON configuration
+- 🎯 **Vim First** - Written in pure Vim(9)script for vim9+ users.
+
+<div align="center">
 
 ![copilotChat](https://github.com/user-attachments/assets/0cd1119d-89c8-4633-972e-641718e6b24b)
 </div>
@@ -189,6 +199,107 @@ function validateUser() {
 }
 ```
 This will send the full template text + your code to Copilot.
+
+## MCP Server Support
+
+Copilot Chat for Vim supports [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers, allowing you to extend the capabilities of your chat sessions with external tools and data sources.
+
+### Configuration
+
+MCP servers are configured in your `config.json` file under the `mcp` key. You can add this configuration by running `:CopilotChatConfig` and adding the following structure:
+
+```json
+{
+  "model": "gpt-4",
+  "mcp": {
+    "server-name": {
+      "type": "stdio|sse|streamingHTTP",
+      "command": "command-to-run",
+      "args": ["arg1", "arg2"],
+      "url": "http://example.com/mcp"
+    }
+  }
+}
+```
+
+### Connection Types
+
+#### stdio (Standard Input/Output)
+For servers that communicate via standard input/output:
+```json
+{
+  "mcp": {
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "filesystem": {
+      "type": "stdio", 
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/directory"]
+    }
+  }
+}
+```
+
+#### SSE (Server-Sent Events)
+For servers that communicate via Server-Sent Events over HTTP:
+```json
+{
+  "mcp": {
+    "web-server": {
+      "type": "sse",
+      "url": "http://localhost:3000/mcp/sse"
+    }
+  }
+}
+```
+
+#### streamingHTTP
+For servers that use streaming HTTP connections:
+```json
+{
+  "mcp": {
+    "api-server": {
+      "type": "streamingHTTP",
+      "url": "http://localhost:8080/mcp/stream"
+    }
+  }
+}
+```
+
+### Example Configuration
+Here's a complete example showing multiple MCP servers with different connection types:
+
+```json
+{
+  "model": "gpt-4",
+  "prompts": {
+    "explain": "Explain how this code works in detail:"
+  },
+  "mcp": {
+    "basic-sse-test": {
+      "type": "sse",
+      "url": "http://localhost:3000/mcp/sse"
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx", 
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/username/projects"]
+    }
+  }
+}
+```
+
+### Using MCP Servers
+
+Once configured, MCP servers will automatically connect when you open a new chat window. The available tools and resources from connected MCP servers will be accessible to Copilot during your chat sessions, extending its capabilities with external data and functionality.
 
 ## Contributing
 Please see the [contribution guide](./CONTRIBUTING.md) for more information.
