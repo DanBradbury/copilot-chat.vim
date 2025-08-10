@@ -397,10 +397,10 @@ function! s:start_http_server(details) abort
   try
     "let init_request = copilot_chat#http('POST', a:details.url, request_headers, request)[0]
     let init_request = copilot_chat#tools#mcp_http_request('POST', a:details, request)
-    if s:is_valid_json(init_request) && has_key(init_request[1], 'mcp-session-id')
+    if has_key(init_request[1], 'mcp-session-id')
+
       let session_id = init_request[1]['mcp-session-id']
       let g:copilot_chat_mcp_servers[a:details.id - 1]['session-id'] = session_id
-      call copilot_chat#log#write("Init request" . init_request[0])
 
       let post_init_request = {
             \ "jsonrpc": "2.0",
