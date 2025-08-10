@@ -284,6 +284,18 @@ g:copilot_chat_open_on_toggle                  *g:copilot_chat_open_on_toggle*
 Set to 0 to prevent a new chat window from opening when toggling the chat
 window.
 
+g:copilot_chat_window_position                *g:copilot_chat_window_position*
+
+Set to control the split direction when opening a chat window.
+Valid values: 'right' (default), 'left', 'top', 'bottom'.
+
+Example:
+>
+  let g:copilot_chat_window_position = 'bottom'
+<
+
+This setting takes precedence over the value in `config.json`.
+
 g:copilot_list_chat_buffer                     *g:copilot_list_chat_buffer*
 
 By default, copilot-chat buffers are not listed. Set to 1 to change this
