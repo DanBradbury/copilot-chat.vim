@@ -143,11 +143,15 @@ function! copilot_chat#http(method, url, headers, body) abort
     for header in a:headers
       let l:curl_cmd .= '-H "' . header . '" '
     endfor
-    let l:curl_cmd .= "-d '" . l:token_data . "' " . a:url . ' -D headers.txt'
+    let l:curl_cmd .= "-d '" . l:token_data . "' " . a:url . ' -D -'
     call copilot_chat#log#write(l:curl_cmd)
 
-    let l:response = system(l:curl_cmd)
-    let l:headers_raw = system('cat headers.txt')
+    let l:raw_output = system(l:curl_cmd)
+    let l:sections = split(l:raw_output, '\r\n\r\n\|\n\n', 1)
+
+    let l:headers_raw = l:sections[0]
+    let l:response = len(l:sections) > 1 ? join(l:sections[1:], '\n\n') : ''
+
     let l:lines = split(l:headers_raw, '\n')
 
     " Initialize an empty dictionary to store header key/values
@@ -166,6 +170,7 @@ function! copilot_chat#http(method, url, headers, body) abort
             let l:headers_dict[l:key] = l:value
         endif
     endfor
+
     if v:shell_error != 0
       echom 'Error: ' . v:shell_error
       return ''
