@@ -67,6 +67,7 @@ function! copilot_chat#tools#mcp_function_call(function_name, arguments) abort
       endif
     elseif has_key(server, "type")
       if server.type == "sse"
+        "let endpoint = help#base_url(server['url']) . server['endpoint']
         let endpoint = s:base_url(server['url']) . server['endpoint']
         let cleaned_endpoint = substitute(endpoint, '?', '', '')
         let tools_response = copilot_chat#http('POST', cleaned_endpoint, ['Content-Type: application/json'], l:request)[0]
@@ -437,10 +438,8 @@ function! s:start_http_server(details) abort
         \ }
         \ }
   try
-    "let init_request = copilot_chat#http('POST', a:details.url, request_headers, request)[0]
     let init_request = copilot_chat#tools#mcp_http_request('POST', a:details, request)
     if has_key(init_request[1], 'mcp-session-id')
-
       let session_id = init_request[1]['mcp-session-id']
       let g:copilot_chat_mcp_servers[a:details.id - 1]['session-id'] = session_id
 

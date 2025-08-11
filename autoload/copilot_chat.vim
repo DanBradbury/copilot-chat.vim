@@ -164,7 +164,7 @@ function! copilot_chat#http(method, url, headers, body) abort
             " Split the line into key and value
             let l:parts = split(l:line, ':', 2)
             " Trim whitespace from key and value
-            let l:key = trim(l:parts[0])
+            let l:key = tolower(trim(l:parts[0]))
             let l:value = trim(l:parts[1])
             " Add the key/value pair to the dictionary
             let l:headers_dict[l:key] = l:value
