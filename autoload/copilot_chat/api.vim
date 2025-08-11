@@ -20,7 +20,7 @@ function! copilot_chat#api#async_request(messages, file_list) abort
     call add(a:messages, {'content': l:c, 'role': 'user'})
   endfor
 
-  let l:tools = copilot_chat#tools#fetch()
+  let l:tools = copilot_chat#mcp#get_enabled_tools()
   "let l:tools = []
   "call add(l:tools, {"function": {"name": "semantic_search","description": "Run a natural language search for relevant code or documentation comments from the user's current workspace. Returns relevant code snippets from the user's current workspace if it is large, or the full contents of the workspace if it is small.", "parameters": {"type": "object", "properties": {"query": {"type": "string","description": "The query to search the codebase for. Should contain all relevant context. Should ideally be text that might appear in the codebase, such as function names, variable names, or comments."}},"required": ["query"]}},"type": "function"})
 
