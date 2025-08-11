@@ -29,6 +29,10 @@ function! copilot_chat#buffer#create() abort
   setlocal bufhidden=hide
   setlocal noswapfile
   setlocal filetype=copilot_chat
+  setlocal foldmethod=marker
+  setlocal foldmarker={{{,}}}
+  setlocal foldenable
+  setlocal foldlevel=0
 
   " Set buffer name
   execute 'file CopilotChat-' . s:chat_count
@@ -159,30 +163,30 @@ function! copilot_chat#buffer#append_message(message) abort
   call appendbufline(g:copilot_chat_active_buffer, '$', a:message)
 endfunction
 
-function! copilot_chat#buffer#populate_mcp_info() abort
-  call append(0, 'MCP Servers')
-  call append(1, '')
+function! copilot_chat#buffer#append_foldable_response(header, content) abort
+  " Add header with fold marker to start fold
+  call appendbufline(g:copilot_chat_active_buffer, '$', a:header . ' {{{')
 
-  if exists('g:copilot_chat_mcp_servers')
-    let line_num = 2
-    for server in g:copilot_chat_mcp_servers
-      let status_icon = '⏳'
-      if has_key(server, 'status')
-        if server.status == 'success'
-          let status_icon = '✅'
-        elseif server.status == 'failed'
-          let status_icon = '❌'
-        endif
-      endif
-      call append(line_num, status_icon . ' ' . server.name)
-      let line_num += 1
-    endfor
+  " Split content by lines and add each line
+  if type(a:content) == v:t_string
+    let l:lines = split(a:content, "\n")
+  else
+    let l:lines = a:content
   endif
+
+  for l:line in l:lines
+    call appendbufline(g:copilot_chat_active_buffer, '$', l:line)
+  endfor
+
+  call appendbufline(g:copilot_chat_active_buffer, '$', '}}}')
+
+  " The fold will be automatically created by foldmethod=marker
+  " Let Vim handle the fold creation and initial state
 endfunction
 
 function! copilot_chat#buffer#welcome_message() abort
   call appendbufline(g:copilot_chat_active_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
-  call copilot_chat#buffer#populate_mcp_info()
+  "call copilot_chat#buffer#populate_mcp_info()
   call copilot_chat#buffer#add_input_separator()
 endfunction
 

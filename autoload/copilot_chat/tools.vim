@@ -101,7 +101,7 @@ function! s:HandleMCPMessage(message)
       let l:mcp_output = a:message.result.content[0].text
       call copilot_chat#log#write("inside the mssage process")
       call copilot_chat#log#write(l:mcp_output)
-      call copilot_chat#buffer#append_message('MCP FUNCTION RESPONSE: ' . l:mcp_output)
+      call copilot_chat#buffer#append_foldable_response('MCP FUNCTION RESPONSE:', l:mcp_output)
       call add(g:buffer_messages[g:copilot_chat_active_buffer], {'role': 'tool', 'content': l:mcp_output, 'tool_call_id': g:last_tool.call_id})
       call add(g:buffer_messages[g:copilot_chat_active_buffer], {'role': 'user', 'content': 'Above is the result of calling one or more tools. The user cannot see the results, so you should explain them to the user if referencing them in your answer. Continue from where you left off if needed without repeating yourself.'})
       call copilot_chat#log#write("added to buffer")
