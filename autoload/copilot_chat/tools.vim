@@ -16,13 +16,18 @@ function! s:base_url(url) abort
   return substitute(a:url, '\(https\?://[^/]\+\).*', '\1', '')
 endfunction
 
-function! copilot_chat#tools#mcp_function_call(function_name) abort
+function! copilot_chat#tools#mcp_function_call(function_name, arguments) abort
+    let cleaned_args = {}
+    if a:arguments != ""
+      let cleaned_args = json_decode(a:arguments)
+    endif
+
     let l:request_id = localtime()
     let l:request = {
         \ 'jsonrpc': '2.0',
         \ 'id': l:request_id,
         \ 'method': 'tools/call',
-        \ 'params': {"name": a:function_name, "arguments": {}}
+        \ 'params': {"name": a:function_name, "arguments": cleaned_args}
     \ }
     "let l:function_url = copilot_chat#tools#find_by_name(a:function_name).url
     let server = copilot_chat#tools#find_server_by_tool_name(a:function_name)
@@ -257,7 +262,6 @@ endfunction
 
 function! copilot_chat#tools#find_server_by_tool_name(tool_name) abort
   let l:m = {}
-  call copilot_chat#log#write('tool name: ' . a:tool_name)
   for server in g:copilot_chat_mcp_servers
     " iterate over the tools in each server and return if we find a match
     if has_key(server, "tools")

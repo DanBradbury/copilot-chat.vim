@@ -125,7 +125,7 @@ endfunction
 function! copilot_chat#mcp#function_callback(function_request, function_arguments) abort
   let a:function_request['function']['arguments'] = a:function_arguments
   call add(g:buffer_messages[g:copilot_chat_active_buffer], {'role': 'assistant', 'content': '', 'tool_calls': [a:function_request]})
-  let mcp_output = copilot_chat#tools#mcp_function_call(a:function_request['function']['name'])
+  let mcp_output = copilot_chat#tools#mcp_function_call(a:function_request['function']['name'], a:function_arguments)
 endfunction
 
 " MCP Servers & Tools display functionality

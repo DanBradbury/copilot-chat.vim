@@ -2,7 +2,7 @@ scriptencoding utf-8
 
 let s:curl_output = []
 " XXX: I don't like this but for now its working
-let g:last_tool = {'call_id': '-1', 'server_id': '-1'}
+let g:last_tool = {'call_id': '-1', 'server_id': '-1', 'args': ''}
 
 function! copilot_chat#api#async_request(messages, file_list) abort
   let l:chat_token = copilot_chat#auth#verify_signin()
@@ -93,7 +93,7 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
       if line =~? 'tool_calls'
         call copilot_chat#log#write("TOOL CALL")
         call copilot_chat#log#write(line)
-        if has_key(l:json_completion.choices[0].delta, 'tool_calls') && has_key(l:json_completion.choices[0].delta.tool_calls[0], 'id')
+        if has_key(l:json_completion.choices[0].delta, 'tool_calls') && has_key(l:json_completion.choices[0].delta.tool_calls[0].function, 'name')
           let l:function_name = l:json_completion.choices[0].delta.tool_calls[0].function.name
 
           call copilot_chat#buffer#append_message('MCP FUNCTION CALL: ' . l:function_name)
@@ -103,11 +103,12 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
           let l:function_request = {'type': 'function', 'id': call_id, 'function': {'name': l:function_name}}
           let g:last_tool['call_id'] = l:json_completion.id
           let g:last_tool['server_id'] = details.id
+          let g:last_tool['args'] = ''
           let server_name = details.name
         elseif line =~? 'finish_reason'
-          call copilot_chat#mcp#function_call_prompt(function('copilot_chat#mcp#function_callback', [l:function_request, l:function_arguments]), l:function_request['function']['name'], server_name, l:function_arguments)
+          call copilot_chat#mcp#function_call_prompt(function('copilot_chat#mcp#function_callback', [l:function_request, g:last_tool['args']]), l:function_request['function']['name'], server_name, g:last_tool['args'])
         else
-          let l:function_arguments .= l:json_completion.choices[0].delta.tool_calls[0].function.arguments
+          let g:last_tool['args'] .= l:json_completion.choices[0].delta.tool_calls[0].function.arguments
         endif
       " elseif has_key(l:json_completion, 'choices') && len(l:json_completion.choices) > 0 && has_key(l:json_completion.choices[0], 'delta') && has_key(l:json_completion.choices[0].delta, 'content') && type(l:json_completion.choices[0].delta.content) != type(v:null)
       else
