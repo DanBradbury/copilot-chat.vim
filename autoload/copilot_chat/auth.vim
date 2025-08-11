@@ -30,8 +30,13 @@ function! copilot_chat#auth#get_chat_token(fetch_new) abort
       \ }
     let l:response = copilot_chat#http('GET', l:token_url, l:token_headers, l:token_data)[0]
     let l:json_response = json_decode(l:response)
-    let l:chat_token = l:json_response.token
-    call writefile([l:chat_token], s:chat_token_file)
+    try
+      let l:chat_token = l:json_response.token
+      call writefile([l:chat_token], s:chat_token_file)
+    catch
+      echom l:json_response.message
+      return v:null
+    endtry
 
     return l:chat_token
   endif

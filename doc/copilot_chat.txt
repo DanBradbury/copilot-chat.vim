@@ -98,6 +98,12 @@ Copilot's AI assistant directly from within their editor.
                          including connection status and available tools.
                          Displays information about which servers are running,
                          failed, or disconnected.
+                                                       *:CopilotChatToggle*
+:CopilotChatToggle       Toggle the Copilot Chat window. If it exists, close it. If it
+                         doesn't exist, open a new one. Set
+                         |g:s:copilot_chat_open_on_toggle| to 0 to prevnet new
+                         windows from opening.
+
 
 ==============================================================================
 5. Key Mappings                                       *copilot-chat-mappings*
@@ -381,10 +387,33 @@ to 0, a new chat window is always created. Note that adding selection to is
 always appended to the active chat window, regardless of this setting (default:
 1).
 
-g:g:copilot_chat_data_dir                      *g:copilot_chat_data_dir*
+g:copilot_chat_data_dir                        *g:copilot_chat_data_dir*
 
 Set to the directory where the plugin stores its data. By default, this is
 `~/.vim/copilot-chat/`.
+
+g:copilot_chat_open_on_toggle                  *g:copilot_chat_open_on_toggle*
+
+Set to 0 to prevent a new chat window from opening when toggling the chat
+window.
+
+g:copilot_chat_window_position                *g:copilot_chat_window_position*
+
+Set to control the split direction when opening a chat window.
+Valid values: 'right' (default), 'left', 'top', 'bottom'.
+
+Example:
+>
+  let g:copilot_chat_window_position = 'bottom'
+<
+
+This setting takes precedence over the value in `config.json`.
+
+g:copilot_list_chat_buffer                     *g:copilot_list_chat_buffer*
+
+By default, copilot-chat buffers are not listed. Set to 1 to change this
+behavior.
+
 
 ==============================================================================
 8. Troubleshooting                             *copilot-chat-troubleshooting*

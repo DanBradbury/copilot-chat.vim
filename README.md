@@ -301,5 +301,36 @@ Here's a complete example showing multiple MCP servers with different connection
 
 Once configured, MCP servers will automatically connect when you open a new chat window. The available tools and resources from connected MCP servers will be accessible to Copilot during your chat sessions, extending its capabilities with external data and functionality.
 
+
+## Custom Configuration
+
+You can customize the behavior of Copilot Chat by setting global variables in your `vimrc`.
+
+### Configuration Options
+
+| Variable | Description |
+|----------|-------------|
+| `g:copilot_chat_window_position` | Controls the split direction when opening a chat window. Valid values: `'right'` (default), `'left'`, `'top'`, `'bottom'`. Example: `let g:copilot_chat_window_position = 'bottom'`. Takes precedence over config.json. |
+| `g:copilot_chat_disable_mappings` | Set to 1 to disable the plugin's default mappings in the chat window. |
+| `g:copilot_chat_create_on_add_selection` | Set to 1 to create a new chat window when adding a visual selection if no chat window is open. If set to 0, no action is taken when no active chat window exists (default: 1). |
+| `g:copilot_chat_jump_to_chat_on_add_selection` | Set to 1 to jump to the chat window when adding a visual selection. If set to 0, the selection is added to the active chat window, but the user remains in the current window (default: 1). |
+| `g:copilot_reuse_active_chat` | Set to 1 to reuse the active chat window when opening a new chat window. If set to 0, a new chat window is always created. Adding selection is always appended to the active chat window, regardless of this setting (default: 1). |
+| `g:copilot_chat_data_dir` | Set to the directory where the plugin stores its data. By default, this is `~/.vim/copilot-chat/`. |
+| `g:copilot_chat_open_on_toggle` | Set to 0 to prevent a new chat window from opening when toggling the chat window. |
+| `g:copilot_list_chat_buffer` | By default, copilot-chat buffers are not listed. Set to 1 to change this behavior. |
+
+For example, to always open chats in a horizontal split at the bottom:
+
+```vim
+let g:copilot_chat_window_position = 'bottom'
+```
+
+## Problems
+
+The following error message means the logged in account does not
+have CoPilot activated:
+
+> Resource not accessible by integration
+
 ## Contributing
 Please see the [contribution guide](./CONTRIBUTING.md) for more information.

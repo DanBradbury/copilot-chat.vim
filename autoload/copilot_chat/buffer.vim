@@ -6,7 +6,11 @@ let s:chat_count = 1
 let s:completion_active = 0
 
 function! copilot_chat#buffer#winsplit() abort
-  let l:position = copilot_chat#config#get_value('window_position', 'right')
+  if exists('g:copilot_chat_window_position')
+    let l:position = g:copilot_chat_window_position
+  else
+    let l:position = copilot_chat#config#get_value('window_position', 'right')
+  endif
 
   " Create split based on position
   if l:position ==# 'right'
@@ -19,6 +23,8 @@ function! copilot_chat#buffer#winsplit() abort
     botright split
   endif
 endfunction
+
+let s:copilot_list_chat_buffer = get(g:, 'copilot_list_chat_buffer', 0)
 
 function! copilot_chat#buffer#create() abort
   call copilot_chat#buffer#winsplit()
@@ -33,6 +39,9 @@ function! copilot_chat#buffer#create() abort
   setlocal foldmarker={{{,}}}
   setlocal foldenable
   setlocal foldlevel=0
+  if s:copilot_list_chat_buffer == 0
+    setlocal nobuflisted
+  endif
 
   " Set buffer name
   execute 'file CopilotChat-' . s:chat_count
@@ -87,6 +96,23 @@ function! copilot_chat#buffer#focus_active_chat() abort
   " Not found in current visible windows, so create a new split
   call copilot_chat#buffer#winsplit()
   execute 'buffer ' . g:copilot_chat_active_buffer
+endfunction
+
+let s:copilot_chat_open_on_toggle = get(g:, 'copilot_chat_open_on_toggle', 1)
+function! copilot_chat#buffer#toggle_active_chat() abort
+  if copilot_chat#buffer#has_active_chat() == 0
+    if s:copilot_chat_open_on_toggle == 1
+      call copilot_chat#buffer#create()
+    endif
+    return
+  endif
+
+  let l:current_bufnr = bufnr('%')
+  if l:current_bufnr == g:copilot_chat_active_buffer
+    close
+  else
+    call copilot_chat#buffer#focus_active_chat()
+  endif
 endfunction
 
 function! copilot_chat#buffer#add_input_separator() abort
@@ -314,7 +340,9 @@ function! copilot_chat#buffer#highlight_code_block(start_line, end_line, lang, b
       if exists('b:current_syntax')
         unlet b:current_syntax
       endif
-      execute 'syntax include @' . lang . ' ' . syntax_file
+      " Use syntax relative path (otherwise may fail on windows)
+      let l:syntaxfile = 'syntax/' . lang . '.vim'
+      execute 'syntax include @' . lang . ' ' . l:syntaxfile
 
       call add(b:added_syntaxes, '@' . lang)
     endif
