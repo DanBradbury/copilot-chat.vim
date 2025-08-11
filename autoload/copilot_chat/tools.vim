@@ -1,6 +1,7 @@
 let g:mcp_tools = []
 let s:sse_jobs = {}
 let s:mcp_messages = []
+let s:pending_tool_responses = {}
 
 function! s:is_valid_json(str)
   try
@@ -14,6 +15,30 @@ endfunction
 "XXX: cleanup later
 function! s:base_url(url) abort
   return substitute(a:url, '\(https\?://[^/]\+\).*', '\1', '')
+endfunction
+
+function! s:find_job_by_server_id(server_id) abort
+  for server in g:copilot_chat_mcp_servers
+    if server.id == a:server_id && has_key(server, 'job_id')
+      return server.job_id
+    endif
+  endfor
+  return v:null
+endfunction
+
+function! s:wait_for_tool_response(request_id) abort
+  let max_wait = 100
+  let wait_count = 0
+  while wait_count < max_wait
+    if has_key(s:pending_tool_responses, a:request_id)
+      let response = s:pending_tool_responses[a:request_id]
+      unlet s:pending_tool_responses[a:request_id]
+      return response
+    endif
+    sleep 50m
+    let wait_count += 1
+  endwhile
+  return '{"error": "Tool request timeout"}'
 endfunction
 
 function! copilot_chat#tools#mcp_function_call(function_name, arguments) abort
@@ -33,6 +58,13 @@ function! copilot_chat#tools#mcp_function_call(function_name, arguments) abort
     let server = copilot_chat#tools#find_server_by_tool_name(a:function_name)
     if has_key(server, 'command')
       call copilot_chat#log#write("COMMAND MCP FUNCTION CALL")
+      let server_job = s:find_job_by_server_id(server.id)
+      if server_job != v:null
+        call s:send_request(l:request, server_job)
+        let tools_response = s:wait_for_tool_response(l:request_id)
+      else
+        let tools_response = '{"error": "MCP server job not found"}'
+      endif
     elseif has_key(server, "type")
       if server.type == "sse"
         let endpoint = s:base_url(server['url']) . server['endpoint']
@@ -42,9 +74,9 @@ function! copilot_chat#tools#mcp_function_call(function_name, arguments) abort
         call copilot_chat#log#write(cleaned_endpoint)
       else
         let tools_response = copilot_chat#tools#mcp_http_request('POST', server, l:request)[0]
-        call s:HandleMCPMessage(json_decode(tools_response))
       endif
     endif
+    call s:HandleMCPMessage(json_decode(tools_response))
 
     return tools_response
 endfunction
@@ -94,14 +126,20 @@ function! s:build_curl_sse_command(url)
   return l:cmd
 endfunction
 
-" XXX: bug here with registering tools
 function! s:handle_stdio_response(data, server_id) abort
   let function_call = a:data.id
   call copilot_chat#log#write("tools magica" . a:server_id)
   call copilot_chat#log#write("tools magicaff" . json_encode(a:data))
-  if has_key(a:data.result, 'tools')
-    call copilot_chat#tools#add_tools_to_mcp_server(a:server_id, a:data.result.tools)
-    call copilot_chat#tools#update_mcp_servers_by_id(a:server_id, 'status', 'success')
+  if has_key(a:data, 'result')
+    if has_key(a:data.result, 'tools')
+      call copilot_chat#tools#add_tools_to_mcp_server(a:server_id, a:data.result.tools)
+      call copilot_chat#tools#update_mcp_servers_by_id(a:server_id, 'status', 'success')
+    elseif has_key(a:data.result, 'content')
+      " Handle tool call response
+      let s:pending_tool_responses[a:data.id] = json_encode(a:data)
+    endif
+  elseif has_key(a:data, 'error')
+    let s:pending_tool_responses[a:data.id] = json_encode(a:data)
   endif
 endfunction
 
@@ -441,7 +479,7 @@ function! s:start_sse_job(details) abort
 endfunction
 
 function! s:start_command_job(details) abort
-  let cmd = [a:details.cmd]
+  let cmd = [a:details.command]
   let cmd += a:details.args
   let job_options = {
         \ 'out_cb': function('s:on_stdio_output', [a:details['id']]),
@@ -486,8 +524,9 @@ function! copilot_chat#tools#load_mcp_servers(server_list)
       " for now just sse
       "
     else
-      let obj = {'name': mcp_server_name, 'id': l:i, 'cmd': details.command, 'args': details.args, 'status': 'pending'}
+      let obj = {'name': mcp_server_name, 'id': l:i, 'command': details.command, 'args': details.args, 'status': 'pending'}
       let job_id = s:start_command_job(obj)
+      let obj['job_id'] = job_id
       call add(g:copilot_chat_mcp_servers, obj)
     endif
 
