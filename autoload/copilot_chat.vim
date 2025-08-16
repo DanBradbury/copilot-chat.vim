@@ -160,7 +160,7 @@ function! copilot_chat#http(method, url, headers, body) abort
     " Iterate over each line
     for l:line in l:lines
         " Skip empty lines or lines that don't contain a colon
-        if l:line =~ ':'
+        if l:line =~# ':'
             " Split the line into key and value
             let l:parts = split(l:line, ':', 2)
             " Trim whitespace from key and value

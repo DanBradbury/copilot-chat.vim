@@ -1,6 +1,6 @@
 " Global variable to store the log buffer number
 let g:copilot_chat_log_bufnr = -1
-function! IsJSON(str)
+function! IsJSON(str) abort
   try
     call json_decode(a:str)
     return 1
@@ -10,7 +10,7 @@ function! IsJSON(str)
 endfunction
 
 " Complete pretty printing solution using Vim's built-in functions
-function! PrettyPrintJSON(json_string)
+function! PrettyPrintJSON(json_string) abort
   try
     let json_obj = json_decode(a:json_string)
     return s:JSONStringify(json_obj, 0)
@@ -19,7 +19,7 @@ function! PrettyPrintJSON(json_string)
   endtry
 endfunction
 
-function! s:JSONStringify(obj, indent)
+function! s:JSONStringify(obj, indent) abort
   let ind = repeat('  ', a:indent)
 
   if type(a:obj) == v:t_dict
@@ -75,8 +75,8 @@ function! s:JSONStringify(obj, indent)
 endfunction
 
 " Function to write log messages to the custom buffer
-function! copilot_chat#log#write(message)
-  if exists("g:copilot_chat_debug") && (g:copilot_chat_log_bufnr == -1 || !bufexists(g:copilot_chat_log_bufnr))
+function! copilot_chat#log#write(message) abort
+  if exists('g:copilot_chat_debug') && (g:copilot_chat_log_bufnr == -1 || !bufexists(g:copilot_chat_log_bufnr))
     let current_win = win_getid()
     execute 'botright new copilot-chat-log'
     let g:copilot_chat_log_bufnr = bufnr('%')
@@ -125,11 +125,11 @@ function! copilot_chat#log#write(message)
 endfunction
 
 " Helper function to view the log buffer
-function! CopilotViewLog()
+function! CopilotViewLog() abort
   if g:copilot_chat_log_bufnr != -1 && bufexists(g:copilot_chat_log_bufnr)
     execute 'buffer ' . g:copilot_chat_log_bufnr
   else
-    echo "No log buffer exists yet"
+    echo 'No log buffer exists yet'
   endif
 endfunction
 

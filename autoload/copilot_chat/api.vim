@@ -85,13 +85,13 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
   call deletebufline(g:copilot_chat_active_buffer, '$')
   let l:result = ''
   let l:function_request = {}
-  let l:function_arguments = ""
+  let l:function_arguments = ''
   for line in s:curl_output
     if line =~? '^data: {'
       let l:json_completion = json_decode(line[6:])
       " MCP Land
       if line =~? 'tool_calls'
-        call copilot_chat#log#write("TOOL CALL")
+        call copilot_chat#log#write('TOOL CALL')
         call copilot_chat#log#write(line)
         if has_key(l:json_completion.choices[0].delta, 'tool_calls') && has_key(l:json_completion.choices[0].delta.tool_calls[0].function, 'name')
           let l:function_name = l:json_completion.choices[0].delta.tool_calls[0].function.name
@@ -118,7 +118,7 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
             let l:result .= l:content
           endif
         catch
-          let l:result .= ""
+          let l:result .= ''
         endtry
       endif
     endif
@@ -127,7 +127,7 @@ function! copilot_chat#api#handle_job_close(channel, msg) abort
   call copilot_chat#log#write('result printing')
   call copilot_chat#log#write(l:result)
 
-  if l:result ==# ""
+  if l:result ==# ''
     call copilot_chat#log#write('yabadabadoo')
   else
     let l:response = split(l:result, "\n")
