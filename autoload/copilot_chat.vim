@@ -111,9 +111,6 @@ endfunction
 
 function! copilot_chat#submit_message() abort
   call copilot_chat#add_latest_to_messages()
-  "let [l:messages, l:file_list] = copilot_chat#get_messages()
-
-  "call copilot_chat#api#async_request(l:messages, l:file_list)
   call copilot_chat#api#async_request(g:buffer_messages[g:copilot_chat_active_buffer], [])
 endfunction
 
