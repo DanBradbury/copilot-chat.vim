@@ -1,4 +1,4 @@
-name: Vint
+name: Vinter
 on:
   push:
     branches: [main]
@@ -6,17 +6,16 @@ on:
     branches: [main]
   workflow_dispatch:
 jobs:
-  build:
+  linter:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: ruby/setup-ruby@v1
         with:
-          python-version: '3.13'
-      - name: vint
+          ruby-version: '3.4'
+      - name: vinter
         run: |
-          pip install vim-vint
-          pip install setuptools
-          vint .
+          gem install vinter
+          vinter .

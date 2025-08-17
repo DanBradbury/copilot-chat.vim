@@ -28,7 +28,7 @@ function! copilot_chat#auth#get_chat_token(fetch_new) abort
       \ 'client_id': 'Iv1.b507a08c87ecfe98',
       \ 'scope': 'read:user'
       \ }
-    let l:response = copilot_chat#http('GET', l:token_url, l:token_headers, l:token_data)
+    let l:response = copilot_chat#http('GET', l:token_url, l:token_headers, l:token_data)[0]
     let l:json_response = json_decode(l:response)
     try
       let l:chat_token = l:json_response.token
@@ -70,7 +70,7 @@ function! copilot_chat#auth#get_bearer_token() abort
         \ 'Content-Type: application/json',
         \ ]
 
-    let l:access_token_response = copilot_chat#http('POST', l:token_poll_url, l:token_headers, l:token_poll_data)
+    let l:access_token_response = copilot_chat#http('POST', l:token_poll_url, l:token_headers, l:token_poll_data)[0]
     let l:json_response = json_decode(l:access_token_response)
     let l:bearer_token = l:json_response.access_token
     call writefile([l:bearer_token], s:device_token_file)
@@ -94,7 +94,7 @@ function! copilot_chat#auth#get_device_token() abort
     \ 'scope': 'read:user'
     \ }
 
-  return copilot_chat#http('POST', l:token_url, l:headers, l:data)
+  return copilot_chat#http('POST', l:token_url, l:headers, l:data)[0]
 endfunction
 
 " vim:set ft=vim sw=2 sts=2 et:
