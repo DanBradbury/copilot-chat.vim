@@ -28,6 +28,9 @@ function! copilot_chat#api#async_request(messages, file_list) abort
         \ 'messages': a:messages
         \ })
 
+  let tmpfile = tempname()
+  call writefile([l:data], tmpfile)
+
   let l:curl_cmd = [
         \ 'curl',
         \ '-s',
@@ -38,7 +41,7 @@ function! copilot_chat#api#async_request(messages, file_list) abort
         \ '-H', 'Authorization: Bearer ' . l:chat_token,
         \ '-H', 'Editor-Version: vscode/1.80.1',
         \ '-d',
-        \ l:data,
+        \ '@' . tmpfile,
         \ l:url]
 
   if has('nvim')
