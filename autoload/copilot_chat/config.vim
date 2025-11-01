@@ -6,7 +6,7 @@ let s:chat_config_file = g:copilot_chat_data_dir . '/config.json'
 
 " Read the config file on load
 if filereadable(s:chat_config_file)
-  let s:config_raw_data = join(readfile(s:chat_config_file), '\n')
+  let s:config_raw_data = join(readfile(s:chat_config_file), "\n")
   let s:config = json_decode(s:config_raw_data)
 else
   let s:config = {}
