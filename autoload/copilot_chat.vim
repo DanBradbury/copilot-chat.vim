@@ -46,12 +46,15 @@ function! copilot_chat#submit_message() abort
   let l:messages = []
   let l:responses = []
   let l:pattern = ' ━\+$'
+  let l:all_file_lists = []
   call cursor(1,1)
 
   while search(l:pattern, 'W') > 0
     let l:header_line = getline('.')
     let l:role = 'user'
-    if stridx(l:header_line, ' ') != -1
+    " Check separator icon to determine message role
+    " Separator with  icon indicates assistant response, otherwise user message
+    if stridx(l:header_line, ' ') != -1
       let l:role = 'assistant'
     endif
     let l:start_line = line('.') + 1
@@ -82,11 +85,35 @@ function! copilot_chat#submit_message() abort
     let l:message = join(l:lines, "\n")
 
     call add(l:messages, {'content': l:message, 'role': l:role})
+    call add(l:all_file_lists, l:file_list)
     call cursor(line('.'), col('.') + 1)
   endwhile
 
-  call copilot_chat#api#async_request(l:messages, l:file_list)
+  " Limit message history to improve performance
+  " Only send the most recent messages based on configuration
+  let l:limit = g:copilot_chat_message_history_limit
+  if len(l:messages) > l:limit && l:limit > 0
+    let l:start_idx = len(l:messages) - l:limit
+    let l:messages = l:messages[l:start_idx :]
+    let l:all_file_lists = l:all_file_lists[l:start_idx :]
+  endif
+
+  " Consolidate file lists from recent messages
+  " O(n) consolidation using dictionary for O(1) duplicate detection (improved from O(n²))
+  let l:consolidated_files = []
+  let l:seen = {}
+  for l:files in l:all_file_lists
+    for l:file in l:files
+      if !has_key(l:seen, l:file)
+        let l:seen[l:file] = 1
+        call add(l:consolidated_files, l:file)
+      endif
+    endfor
+  endfor
+
+  call copilot_chat#api#async_request(l:messages, l:consolidated_files)
 endfunction
+
 
 function! copilot_chat#http(method, url, headers, body) abort
   if has('win32')

@@ -12,6 +12,9 @@ let g:copilot_chat_zombie_buffer = -1
 let g:copilot_reuse_active_chat = get(g:, 'copilot_reuse_active_chat', 0)
 let g:copilot_chat_create_on_add_selection = get(g:,'copilot_chat_create_on_add_selection', 1)
 let g:copilot_chat_jump_to_chat_on_add_selection = get(g:, 'copilot_chat_jump_to_chat_on_add_selection', 1)
+let g:copilot_chat_message_history_limit = get(g:, 'copilot_chat_message_history_limit', 20)
+let g:copilot_chat_syntax_debounce_ms = get(g:, 'copilot_chat_syntax_debounce_ms', 300)
+let g:copilot_chat_file_cache_timeout = get(g:, 'copilot_chat_file_cache_timeout', 5)
 
 command! -nargs=0 CopilotChatOpen call copilot_chat#open_chat()
 command! -nargs=1 CopilotChat call copilot_chat#start_chat(<q-args>)

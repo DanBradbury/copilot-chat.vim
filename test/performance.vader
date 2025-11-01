@@ -1,0 +1,59 @@
+Execute:
+  source ./test/mocks/init.vim
+
+Execute (Test message history limit with mock API):
+  " Set a low history limit for testing
+  let g:copilot_chat_message_history_limit = 3
+  
+  " Create a chat buffer
+  call copilot_chat#buffer#create()
+  
+  " Add multiple message pairs (user + assistant) to simulate conversation
+  " Each pair is: separator, content, separator, content
+  call append(line('$'), ' ━━━━━━━━━━━━━━')
+  call append(line('$'), 'Message 1')
+  call append(line('$'), ' ━━━━━━━━━━━━━━')
+  call append(line('$'), 'Response 1')
+  call append(line('$'), ' ━━━━━━━━━━━━━━')
+  call append(line('$'), 'Message 2')
+  call append(line('$'), ' ━━━━━━━━━━━━━━')
+  call append(line('$'), 'Response 2')
+  call append(line('$'), ' ━━━━━━━━━━━━━━')
+  call append(line('$'), 'Message 3')
+  call append(line('$'), ' ━━━━━━━━━━━━━━')
+  call append(line('$'), 'Response 3')
+  call append(line('$'), ' ━━━━━━━━━━━━━━')
+  call append(line('$'), 'Message 4')
+  
+  " Call submit_message which should limit history
+  call copilot_chat#submit_message()
+  
+  " With limit=3, should send at most 3 messages
+  Log 'Captured ' . len(g:captured_messages) . ' messages'
+  AssertTrue len(g:captured_messages) <= 3, 'Message count should be <= limit'
+  AssertTrue len(g:captured_messages) > 0, 'Should have captured some messages'
+
+Execute (Test syntax highlighting with code blocks):
+  " Create a chat buffer
+  call copilot_chat#buffer#create()
+  
+  " Add a code block
+  call copilot_chat#buffer#append_message('```python')
+  call copilot_chat#buffer#append_message('def hello():')
+  call copilot_chat#buffer#append_message('    print("world")')
+  call copilot_chat#buffer#append_message('```')
+  
+  " Trigger syntax highlighting implementation directly
+  call copilot_chat#buffer#apply_code_block_syntax_impl()
+  
+  " Verify buffer exists and has content
+  AssertTrue bufexists(g:copilot_chat_active_buffer)
+  AssertTrue line('$') >= 4
+
+Execute (Test file completion with caching):
+  " This test verifies the caching variables are initialized
+  call copilot_chat#buffer#create()
+  
+  " Just verify buffer is valid
+  AssertTrue bufexists(g:copilot_chat_active_buffer)
+

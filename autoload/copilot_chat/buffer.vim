@@ -4,6 +4,10 @@ let s:colors_cterm = [46, 118, 154, 190, 226, 227, 228, 229, 230]
 let s:color_index = 0
 let s:chat_count = 1
 let s:completion_active = 0
+let s:syntax_timer = -1
+let s:file_completion_timer = -1
+let s:file_list_cache = []
+let s:file_list_cache_time = 0
 
 function! copilot_chat#buffer#winsplit() abort
   if exists('g:copilot_chat_window_position')
@@ -263,6 +267,16 @@ function! copilot_chat#buffer#resize() abort
 endfunction
 
 function! copilot_chat#buffer#apply_code_block_syntax() abort
+  " Debounce syntax highlighting to avoid excessive recalculations
+  if s:syntax_timer != -1
+    call timer_stop(s:syntax_timer)
+  endif
+  let s:syntax_timer = timer_start(g:copilot_chat_syntax_debounce_ms, {-> copilot_chat#buffer#apply_code_block_syntax_impl()})
+endfunction
+
+function! copilot_chat#buffer#apply_code_block_syntax_impl() abort
+  let s:syntax_timer = -1
+
   let lines = getline(1, '$')
   let total_lines = len(lines)
 
@@ -390,17 +404,23 @@ function! copilot_chat#buffer#check_for_macro() abort
         return
       endif
 
-      let is_git_repo = system('git rev-parse --is-inside-work-tree 2>/dev/null')
+      " Cache file list to avoid repeated git/glob calls
+      let current_time = localtime()
+      let cache_expired = s:file_list_cache_time == 0 || (current_time - s:file_list_cache_time) > g:copilot_chat_file_cache_timeout
+      if empty(s:file_list_cache) || cache_expired
+        let is_git_repo = system('git rev-parse --is-inside-work-tree 2>/dev/null')
 
-      if v:shell_error == 0  " We are in a git repo
-        let files = systemlist('git ls-files --cached --others --exclude-standard')
-      else
-        let files = glob('**/*', 0, 1)
+        if v:shell_error == 0  " We are in a git repo
+          let s:file_list_cache = systemlist('git ls-files --cached --others --exclude-standard')
+        else
+          let s:file_list_cache = glob('**/*', 0, 1)
+        endif
+        let s:file_list_cache_time = current_time
       endif
 
       " Filter out directories and prepare completion items
       let matches = []
-      for file in files
+      for file in s:file_list_cache
         if !isdirectory(file) && file =~? typed
           call add(matches, file)
         endif
