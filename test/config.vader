@@ -1,0 +1,29 @@
+Execute (Test config loading with multiline JSON):
+  " Setup: Create a temporary config directory and file with multiline JSON
+  let g:copilot_chat_data_dir = '/tmp/vader_test_config'
+  call mkdir(g:copilot_chat_data_dir, 'p')
+  
+  " Create a config file with newlines in the JSON (formatted JSON)
+  let config_content = [
+    \ '{',
+    \ '  "model": "gpt-4",',
+    \ '  "temperature": 0.7',
+    \ '}'
+    \ ]
+  call writefile(config_content, g:copilot_chat_data_dir . '/config.json')
+  
+  " Reload the config module to test the file reading
+  " We need to unlet the script-local variables and re-source the file
+  runtime autoload/copilot_chat/config.vim
+  
+  " Test that the config was loaded correctly
+  " The join should properly combine lines with newlines, allowing json_decode to parse it
+  let model_value = copilot_chat#config#get_value('model', 'default')
+  AssertEqual 'gpt-4', model_value, 'Config model value should be loaded correctly'
+  
+  let temp_value = copilot_chat#config#get_value('temperature', 0)
+  AssertEqual 0.7, temp_value, 'Config temperature value should be loaded correctly'
+  
+  " Cleanup
+  call delete(g:copilot_chat_data_dir . '/config.json')
+  call delete(g:copilot_chat_data_dir, 'd')
