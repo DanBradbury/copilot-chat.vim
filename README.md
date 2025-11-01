@@ -208,11 +208,29 @@ You can customize the behavior of Copilot Chat by setting global variables in yo
 | `g:copilot_chat_data_dir` | Set to the directory where the plugin stores its data. By default, this is `~/.vim/copilot-chat/`. |
 | `g:copilot_chat_open_on_toggle` | Set to 0 to prevent a new chat window from opening when toggling the chat window. |
 | `g:copilot_list_chat_buffer` | By default, copilot-chat buffers are not listed. Set to 1 to change this behavior. |
+| `g:copilot_chat_message_history_limit` | Maximum number of messages to send to the API (default: 20). Limits context to improve performance with long chat histories. Set to a higher value if you need more context, or lower for better performance. |
+| `g:copilot_chat_syntax_debounce_ms` | Debounce delay in milliseconds for syntax highlighting (default: 300). Lower values update highlighting faster but use more CPU. Higher values improve performance but delay syntax updates. |
+| `g:copilot_chat_file_cache_timeout` | Cache timeout in seconds for file completion (default: 5). Lower values show new files faster but make more system calls. Higher values improve performance but delay showing new files. |
 
 For example, to always open chats in a horizontal split at the bottom:
 
 ```vim
 let g:copilot_chat_window_position = 'bottom'
+```
+
+### Performance Tuning
+
+For better performance with long chat sessions, you can adjust these settings:
+
+```vim
+" Send only the last 10 messages for faster responses
+let g:copilot_chat_message_history_limit = 10
+
+" Increase debounce delay for slower machines (reduces CPU usage)
+let g:copilot_chat_syntax_debounce_ms = 500
+
+" Longer cache timeout for large projects (reduces system calls)
+let g:copilot_chat_file_cache_timeout = 10
 ```
 
 ## Problems
