@@ -12,6 +12,7 @@ let g:copilot_chat_zombie_buffer = -1
 let g:copilot_reuse_active_chat = get(g:, 'copilot_reuse_active_chat', 0)
 let g:copilot_chat_create_on_add_selection = get(g:,'copilot_chat_create_on_add_selection', 1)
 let g:copilot_chat_jump_to_chat_on_add_selection = get(g:, 'copilot_chat_jump_to_chat_on_add_selection', 1)
+let g:copilot_chat_mcp_servers = []
 
 command! -nargs=0 CopilotChatOpen call copilot_chat#open_chat()
 command! -nargs=1 CopilotChat call copilot_chat#start_chat(<q-args>)
@@ -19,6 +20,7 @@ command! -nargs=0 CopilotChatFocus call copilot_chat#buffer#focus_active_chat()
 command! -nargs=0 CopilotChatSubmit call copilot_chat#submit_message()
 command! -nargs=0 CopilotChatConfig call copilot_chat#config#view()
 command! -nargs=0 CopilotChatModels call copilot_chat#models#select()
+command! -nargs=0 CopilotChatMCP call copilot_chat#mcp#show()
 command! -nargs=? CopilotChatSave call copilot_chat#history#save(<q-args>)
 command! -nargs=? -complete=customlist,copilot_chat#history#complete CopilotChatLoad call copilot_chat#history#load(<q-args>)
 command! -nargs=0 CopilotChatList call copilot_chat#history#list()

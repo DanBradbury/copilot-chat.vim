@@ -1,5 +1,25 @@
 scriptencoding utf-8
 
+let g:buffer_messages = {}
+
+function! copilot_chat#add_assistant_message(message) abort
+  call add(g:buffer_messages[g:copilot_chat_active_buffer], {'content': a:message, 'role': 'assistant'})
+endfunction
+
+function! copilot_chat#add_latest_to_messages() abort
+  normal! G
+  call search(' ━\+$', 'b')
+  " TODO: this should be ported as well
+  let l:role = 'user'
+  let l:start_line = line('.') + 1
+  let l:end_line = line('$')
+
+  let l:lines = getline(l:start_line, l:end_line)
+  let l:message = join(l:lines, "\n")
+
+  call add(g:buffer_messages[g:copilot_chat_active_buffer], {'content': l:message, 'role': l:role})
+endfunction
+
 function! copilot_chat#open_chat() abort
   if copilot_chat#auth#verify_signin() != v:null
     if copilot_chat#buffer#has_active_chat() &&
@@ -10,6 +30,7 @@ function! copilot_chat#open_chat() abort
     normal! G
     endif
   endif
+  let g:buffer_messages[g:copilot_chat_active_buffer] = []
 endfunction
 
 function! copilot_chat#start_chat(message) abort
@@ -42,9 +63,10 @@ function! copilot_chat#reset_chat() abort
   endif
 endfunction
 
-function! copilot_chat#submit_message() abort
+function! copilot_chat#get_messages() abort
   let l:messages = []
-  let l:responses = []
+  let l:file_list = []
+
   let l:pattern = ' ━\+$'
   call cursor(1,1)
 
@@ -84,8 +106,12 @@ function! copilot_chat#submit_message() abort
     call add(l:messages, {'content': l:message, 'role': l:role})
     call cursor(line('.'), col('.') + 1)
   endwhile
+  return [l:messages, l:file_list]
+endfunction
 
-  call copilot_chat#api#async_request(l:messages, l:file_list)
+function! copilot_chat#submit_message() abort
+  call copilot_chat#add_latest_to_messages()
+  call copilot_chat#api#async_request(g:buffer_messages[g:copilot_chat_active_buffer], [])
 endfunction
 
 function! copilot_chat#http(method, url, headers, body) abort
@@ -114,15 +140,40 @@ function! copilot_chat#http(method, url, headers, body) abort
     for header in a:headers
       let l:curl_cmd .= '-H "' . header . '" '
     endfor
-    let l:curl_cmd .= "-d '" . l:token_data . "' " . a:url
+    let l:curl_cmd .= "-d '" . l:token_data . "' " . a:url . ' -D -'
+    call copilot_chat#log#write(l:curl_cmd)
 
-    let l:response = system(l:curl_cmd)
+    let l:raw_output = system(l:curl_cmd)
+    let l:sections = split(l:raw_output, '\r\n\r\n\|\n\n', 1)
+
+    let l:headers_raw = l:sections[0]
+    let l:response = len(l:sections) > 1 ? join(l:sections[1:], '\n\n') : ''
+
+    let l:lines = split(l:headers_raw, '\n')
+
+    " Initialize an empty dictionary to store header key/values
+    let l:headers_dict = {}
+
+    " Iterate over each line
+    for l:line in l:lines
+        " Skip empty lines or lines that don't contain a colon
+        if l:line =~# ':'
+            " Split the line into key and value
+            let l:parts = split(l:line, ':', 2)
+            " Trim whitespace from key and value
+            let l:key = tolower(trim(l:parts[0]))
+            let l:value = trim(l:parts[1])
+            " Add the key/value pair to the dictionary
+            let l:headers_dict[l:key] = l:value
+        endif
+    endfor
+
     if v:shell_error != 0
       echom 'Error: ' . v:shell_error
       return ''
     endif
   endif
-  return l:response
+  return [l:response, l:headers_dict]
 endfunction
 
 " vim:set ft=vim sw=2 sts=2 et:

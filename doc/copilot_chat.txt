@@ -17,6 +17,7 @@ CONTENTS                                               *copilot-chat-contents*
         6.2 Add Selection to Chat .............. |copilot-chat-add-selection|
         6.3 Chat History Management ............ |copilot-chat-history|
         6.4 Prompt Templates ................... |copilot-chat-templates|
+        6.5 MCP Server Support ................. |copilot-chat-mcp|
     7. Configuration ........................... |copilot-chat-configuration|
     7.1. AI configuration....................... |copilot-chat-ai-configuration|
     7.2. VIM configuration.......................|copilot-chat-vim-configuration|
@@ -92,12 +93,16 @@ Copilot's AI assistant directly from within their editor.
                                                        *:CopilotChatFocus*
 :CopilotChatFocus        Goto the Copilot Chat window, if it exists.
 
+                                                       *:CopilotChatMCP*
+:CopilotChatMCP          Shows the status of all configured MCP servers,
+                         including connection status and available tools.
+                         Displays information about which servers are running,
+                         failed, or disconnected.
                                                        *:CopilotChatToggle*
 :CopilotChatToggle       Toggle the Copilot Chat window. If it exists, close it. If it
                          doesn't exist, open a new one. Set
                          |g:s:copilot_chat_open_on_toggle| to 0 to prevnet new
                          windows from opening.
-
 
 
 ==============================================================================
@@ -219,6 +224,106 @@ Example usage:
 <
 This will send the full template text + your code to Copilot.
 
+------------------------------------------------------------------------------
+6.5 MCP Server Support                              *copilot-chat-mcp*
+
+Copilot Chat for Vim supports Model Context Protocol (MCP) servers, allowing
+you to extend the capabilities of your chat sessions with external tools and
+data sources.
+
+MCP servers provide additional context and capabilities to your AI assistant,
+such as:
+- Access to external APIs and services
+- File system operations beyond the current project
+- Database queries and data retrieval
+- Custom tools and integrations
+
+Configuration:
+MCP servers are configured in your config.json file under the "mcp" key.
+Use |:CopilotChatConfig| to open the configuration file and add MCP servers:
+
+>
+    {
+      "model": "gpt-4",
+      "mcp": {
+        "server-name": {
+          "type": "stdio|sse|streamingHTTP",
+          "command": "command-to-run",
+          "args": ["arg1", "arg2"],
+          "url": "http://example.com/mcp"
+        }
+      }
+    }
+<
+
+Connection Types:
+
+1. stdio (Standard Input/Output)
+   For servers that communicate via standard input/output:
+>
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    }
+<
+
+2. sse (Server-Sent Events)
+   For servers that communicate via Server-Sent Events over HTTP:
+>
+    "web-server": {
+      "type": "sse",
+      "url": "http://localhost:3000/mcp/sse"
+    }
+<
+
+3. streamingHTTP
+   For servers that use streaming HTTP connections:
+>
+    "api-server": {
+      "type": "streamingHTTP",
+      "url": "http://localhost:8080/mcp/stream"
+    }
+<
+
+Complete Example Configuration:
+>
+    {
+      "model": "gpt-4",
+      "prompts": {
+        "explain": "Explain how this code works in detail:"
+      },
+      "mcp": {
+        "basic-sse-test": {
+          "type": "sse",
+          "url": "http://localhost:3000/mcp/sse"
+        },
+        "memory": {
+          "type": "stdio",
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-memory"]
+        },
+        "filesystem": {
+          "type": "stdio",
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/directory"]
+        }
+      }
+    }
+<
+
+Usage:
+Once configured, MCP servers will automatically connect when you open a new
+chat window. The available tools and resources from connected MCP servers
+will be accessible to Copilot during your chat sessions, extending its
+capabilities with external data and functionality.
+
+Troubleshooting MCP Servers:
+- If a server fails to start, check the command and arguments are correct
+- For HTTP-based servers (sse/streamingHTTP), ensure the URL is reachable
+- Check that required dependencies (like npx packages) are installed
+- Server connection status can be monitored in the chat buffer
+
 ==============================================================================
 7. Configuration                                 *copilot-chat-configuration*
 
@@ -235,6 +340,7 @@ To modify the configuration:
 Configuration options:
 - `model`: The default AI model to use (e.g., "gpt-4o")
 - `prompts`: An object containing prompt templates
+- `mcp`: An object containing MCP server configurations (see |copilot-chat-mcp|)
 
 Example configuration:
 >
@@ -244,6 +350,13 @@ Example configuration:
         "explain": "Explain how this code works in detail:",
         "refactor": "Suggest improvements and refactoring for this code:",
         "docs": "Generate documentation for this code:"
+      },
+      "mcp": {
+        "memory": {
+          "type": "stdio",
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-memory"]
+        }
       }
     }
 <

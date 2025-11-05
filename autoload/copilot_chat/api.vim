@@ -1,6 +1,8 @@
 scriptencoding utf-8
 
 let s:curl_output = []
+" XXX: I don't like this but for now its working
+let g:last_tool = {'call_id': '-1', 'server_id': '-1', 'args': ''}
 
 function! copilot_chat#api#async_request(messages, file_list) abort
   let l:chat_token = copilot_chat#auth#verify_signin()
@@ -18,6 +20,10 @@ function! copilot_chat#api#async_request(messages, file_list) abort
     call add(a:messages, {'content': l:c, 'role': 'user'})
   endfor
 
+  let l:tools = copilot_chat#mcp#get_enabled_tools()
+  "let l:tools = []
+  "call add(l:tools, {"function": {"name": "semantic_search","description": "Run a natural language search for relevant code or documentation comments from the user's current workspace. Returns relevant code snippets from the user's current workspace if it is large, or the full contents of the workspace if it is small.", "parameters": {"type": "object", "properties": {"query": {"type": "string","description": "The query to search the codebase for. Should contain all relevant context. Should ideally be text that might appear in the codebase, such as function names, variable names, or comments."}},"required": ["query"]}},"type": "function"})
+
   let l:data = json_encode({
         \ 'intent': v:false,
         \ 'model': copilot_chat#models#current(),
@@ -25,8 +31,10 @@ function! copilot_chat#api#async_request(messages, file_list) abort
         \ 'top_p': 1,
         \ 'n': 1,
         \ 'stream': v:true,
-        \ 'messages': a:messages
+        \ 'messages': a:messages,
+        \ 'tools': l:tools
         \ })
+  call copilot_chat#log#write(l:data)
 
   let tmpfile = tempname()
   call writefile([l:data], tmpfile)
@@ -79,49 +87,82 @@ endfunction
 function! copilot_chat#api#handle_job_close(channel, msg) abort
   call deletebufline(g:copilot_chat_active_buffer, '$')
   let l:result = ''
+  let l:function_request = {}
+  let l:function_arguments = ''
   for line in s:curl_output
     if line =~? '^data: {'
       let l:json_completion = json_decode(line[6:])
-      try
-        let l:content = l:json_completion.choices[0].delta.content
-        if type(l:content) != type(v:null)
-          let l:result .= l:content
+      " MCP Land
+      if line =~? 'tool_calls'
+        call copilot_chat#log#write('TOOL CALL')
+        call copilot_chat#log#write(line)
+        if has_key(l:json_completion.choices[0].delta, 'tool_calls') && has_key(l:json_completion.choices[0].delta.tool_calls[0].function, 'name')
+          let l:function_name = l:json_completion.choices[0].delta.tool_calls[0].function.name
+
+          call copilot_chat#buffer#append_message('MCP FUNCTION CALL: ' . l:function_name)
+          " fetch the details for the tool
+          let details = copilot_chat#tools#find_server_by_tool_name(l:function_name)
+          let call_id = l:json_completion.id
+          let l:function_request = {'type': 'function', 'id': call_id, 'function': {'name': l:function_name}}
+          let g:last_tool['call_id'] = l:json_completion.id
+          let g:last_tool['server_id'] = details.id
+          let g:last_tool['args'] = ''
+          let server_name = details.name
+        elseif line =~? 'finish_reason'
+          call copilot_chat#mcp#function_call_prompt(function('copilot_chat#mcp#function_callback', [l:function_request, g:last_tool['args']]), l:function_request['function']['name'], server_name, g:last_tool['args'])
+        else
+          let g:last_tool['args'] .= l:json_completion.choices[0].delta.tool_calls[0].function.arguments
         endif
-      catch
-        let l:result .= "\n"
-      endtry
+      " elseif has_key(l:json_completion, 'choices') && len(l:json_completion.choices) > 0 && has_key(l:json_completion.choices[0], 'delta') && has_key(l:json_completion.choices[0].delta, 'content') && type(l:json_completion.choices[0].delta.content) != type(v:null)
+      else
+        try
+          let l:content = l:json_completion.choices[0].delta.content
+          if type(l:content) != type(v:null)
+            let l:result .= l:content
+          endif
+        catch
+          let l:result .= ''
+        endtry
+      endif
     endif
   endfor
 
-  let l:response = split(l:result, "\n")
-  let l:width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
+  call copilot_chat#log#write('result printing')
+  call copilot_chat#log#write(l:result)
 
-  let l:separator = ' '
-  let l:separator .= repeat('━', l:width)
-  let l:response_start = line('$') + 1
-
-  call copilot_chat#buffer#append_message(l:separator)
-  call copilot_chat#buffer#append_message(l:response)
-  call copilot_chat#buffer#add_input_separator()
-
-  let l:wrap_width = l:width + 2
-  let l:softwrap_lines = 0
-  for line in l:response
-    if strwidth(line) > l:wrap_width
-      let l:softwrap_lines += ceil(strwidth(line) / l:wrap_width)
-    else
-      let l:softwrap_lines += 1
-    endif
-  endfor
-
-  let l:total_response_length = l:softwrap_lines + 2
-  let l:height = winheight(0)
-  if l:total_response_length >= l:height
-    execute 'normal! ' . l:response_start . 'Gzt'
+  if l:result ==# ''
+    call copilot_chat#log#write('yabadabadoo')
   else
-    execute 'normal! G'
+    let l:response = split(l:result, "\n")
+    let l:width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
+
+    let l:separator = ' '
+    let l:separator .= repeat('━', l:width)
+    let l:response_start = line('$') + 1
+
+    call copilot_chat#buffer#append_message(l:separator)
+    call copilot_chat#buffer#append_message(l:response)
+    call copilot_chat#buffer#add_input_separator()
+
+    let l:wrap_width = l:width + 2
+    let l:softwrap_lines = 0
+    for line in l:response
+      if strwidth(line) > l:wrap_width
+        let l:softwrap_lines += ceil(strwidth(line) / l:wrap_width)
+      else
+        let l:softwrap_lines += 1
+      endif
+    endfor
+
+    let l:total_response_length = l:softwrap_lines + 2
+    let l:height = winheight(0)
+    if l:total_response_length >= l:height
+      execute 'normal! ' . l:response_start . 'Gzt'
+    else
+      execute 'normal! G'
+    endif
+    call setcursorcharpos(0, 3)
   endif
-  call setcursorcharpos(0, 3)
 
 endfunction
 
@@ -143,7 +184,7 @@ function! copilot_chat#api#fetch_models(chat_token) abort
     \ 'Editor-Version: vscode/1.80.1'
     \ ]
 
-  let l:response = copilot_chat#http('GET', 'https://api.githubcopilot.com/models', l:chat_headers, {})
+  let l:response = copilot_chat#http('GET', 'https://api.githubcopilot.com/models', l:chat_headers, {})[0]
   try
     let l:json_response = json_decode(l:response)
     let l:model_list = []
