@@ -23,11 +23,11 @@ def SaveConfigFile()
   writefile([json_encode(config)], chat_config_file)
 enddef
 
-export def GetValue(key: string, default: string): string
+export def GetValue(key: string, default: any): any
   return get(config, key, default)
 enddef
 
-export def SetValue(key: string, value: string)
+export def SetValue(key: string, value: any)
   config[key] = value
   SaveConfigFile()
 enddef
