@@ -1,161 +1,200 @@
+vim9script
 scriptencoding utf-8
 
-let s:curl_output = []
+import autoload 'copilot_chat/auth.vim' as auth
+import autoload 'copilot_chat/buffer.vim' as _buffer
+import autoload 'copilot_chat/models.vim' as models
 
-function! copilot_chat#api#async_request(messages, file_list) abort
-  let l:chat_token = copilot_chat#auth#verify_signin()
-  let s:curl_output = []
-  let l:url = 'https://api.githubcopilot.com/chat/completions'
+var curl_output: list<string> = []
 
-  " for knowledge bases its just an attachment as the content
-  "{'content': '<attachment id="kb:Name">\n#kb:\n</attachment>', 'role': 'user'}
-  " for files similar
-  for file in a:file_list
-    let l:file_content = readfile(file)
-    let full_path = fnamemodify(file, ':p')
-    " TODO: get the filetype instead of just markdown
-    let l:c = '<attachment id="' . file . '">\n````markdown\n<!-- filepath: ' . full_path . ' -->\n' . join(l:file_content, "\n") . '\n```</attachment>'
-    call add(a:messages, {'content': l:c, 'role': 'user'})
+export def AsyncRequest(messages: list<any>, file_list: list<any>): job
+  var chat_token = auth.VerifySignin()
+  curl_output = []
+  var url = 'https://api.githubcopilot.com/chat/completions'
+
+  # for knowledge bases its just an attachment as the content
+  # {'content': '<attachment id="kb:Name">\n#kb:\n</attachment>', 'role': 'user'}
+  # for files similar
+  for file in file_list
+    var file_content = readfile(file)
+    var full_path = fnamemodify(file, ': p')
+    # TODO: get the filetype instead of just markdown
+    var c = '<attachment id="' .. file .. '">\n````markdown\n<!-- filepath: ' .. full_path .. ' -->\n' .. join(file_content, "\n") .. '\n```</attachment>'
+    add(messages, {'content': c, 'role': 'user'})
   endfor
+  var v = models.Current()
 
-  let l:data = json_encode({
-        \ 'intent': v:false,
-        \ 'model': copilot_chat#models#current(),
-        \ 'temperature': 0,
-        \ 'top_p': 1,
-        \ 'n': 1,
-        \ 'stream': v:true,
-        \ 'messages': a:messages
-        \ })
+  var data = json_encode({
+    'intent': false,
+    'model': v,
+    'temperature': 0,
+    'top_p': 1,
+    'n': 1,
+    'stream': true,
+    'messages': messages
+  })
 
-  let tmpfile = tempname()
-  call writefile([l:data], tmpfile)
+  var tmpfile = tempname()
+  writefile([data], tmpfile)
 
-  let l:curl_cmd = [
-        \ 'curl',
-        \ '-s',
-        \ '-X',
-        \ 'POST',
-        \ '-H',
-        \ 'Content-Type: application/json',
-        \ '-H', 'Authorization: Bearer ' . l:chat_token,
-        \ '-H', 'Editor-Version: vscode/1.80.1',
-        \ '-d',
-        \ '@' . tmpfile,
-        \ l:url]
+  var curl_cmd = [
+    'curl',
+    '-s',
+    '-X',
+    'POST',
+    '-H',
+    'Content-Type: application/json',
+    '-H', 'Authorization: Bearer ' .. chat_token,
+    '-H', 'Editor-Version: vscode/1.80.1',
+    '-d',
+    $'@{tmpfile}',
+    url
+  ]
 
-  if has('nvim')
-    let job = jobstart(l:curl_cmd, {
-      \ 'on_stdout': {chan_id, data, name->copilot_chat#api#handle_job_output(chan_id, data)},
-      \ 'on_exit': {chan_id, data, name->copilot_chat#api#handle_job_close(chan_id, data)},
-      \ 'on_stderr': {chan_id, data, name->copilot_chat#api#handle_job_error(chan_id, data)},
-      \ 'stdout_buffered': v:true,
-      \ 'stderr_buffered': v:true
-      \ })
-  else
-    let job = job_start(l:curl_cmd, {
-      \ 'out_cb': function('copilot_chat#api#handle_job_output'),
-      \ 'exit_cb': function('copilot_chat#api#handle_job_close'),
-      \ 'err_cb': function('copilot_chat#api#handle_job_error')
-      \ })
-  endif
-  call copilot_chat#buffer#waiting_for_response()
+  var job = job_start(curl_cmd, {
+     'out_cb': function('HandleJobOutput'),
+     'exit_cb': function('HandleJobClose'),
+     'err_cb': function('HandleJobError')
+     })
+
+  _buffer.WaitingForResponse()
 
   return job
-endfunction
+enddef
 
-function! copilot_chat#api#handle_job_output(channel, msg) abort
-  if type(a:msg) == v:t_list
-    for data in a:msg
+def HandleJobOutput(channel: any, msg: any)
+  echom curl_output
+  if type(msg) == v:t_list
+    for data in msg
       if data =~? '^data: {'
-        call add(s:curl_output, data)
+        add(curl_output, data)
       endif
     endfor
   else
-    call add(s:curl_output, a:msg)
+    add(curl_output, msg)
   endif
-endfunction
+enddef
 
-function! copilot_chat#api#handle_job_close(channel, msg) abort
-  call deletebufline(g:copilot_chat_active_buffer, '$')
-  let l:result = ''
-  for line in s:curl_output
+def HandleJobClose(channel: any, msg: any)
+  echom curl_output
+  deletebufline(g:copilot_chat_active_buffer, '$')
+  var result = ''
+  for line in curl_output
     if line =~? '^data: {'
-      let l:json_completion = json_decode(line[6:])
+      var json_completion = json_decode(strcharpart(line, 6))
       try
-        let l:content = l:json_completion.choices[0].delta.content
-        if type(l:content) != type(v:null)
-          let l:result .= l:content
+        var content = json_completion.choices[0].delta.content
+        if type(content) != type(v:null)
+          result ..= content
         endif
       catch
-        let l:result .= "\n"
+        result ..= "\n"
       endtry
-    endif
-  endfor
-
-  let l:response = split(l:result, "\n")
-  let l:width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
-
-  let l:separator = ' '
-  let l:separator .= repeat('━', l:width)
-  let l:response_start = line('$') + 1
-
-  call copilot_chat#buffer#append_message(l:separator)
-  call copilot_chat#buffer#append_message(l:response)
-  call copilot_chat#buffer#add_input_separator()
-
-  let l:wrap_width = l:width + 2
-  let l:softwrap_lines = 0
-  for line in l:response
-    if strwidth(line) > l:wrap_width
-      let l:softwrap_lines += ceil(strwidth(line) / l:wrap_width)
     else
-      let l:softwrap_lines += 1
+      result ..= line
     endif
   endfor
 
-  let l:total_response_length = l:softwrap_lines + 2
-  let l:height = winheight(0)
-  if l:total_response_length >= l:height
-    execute 'normal! ' . l:response_start . 'Gzt'
+  var response = split(result, "\n")
+  var width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
+  var separator = ' '
+  separator ..= repeat('━', width)
+  var response_start = line('$') + 1
+
+  _buffer.AppendMessage(separator)
+  _buffer.AppendMessage(response)
+  _buffer.AddInputSeparator()
+
+  var wrap_width = width + 2
+  var softwrap_lines = 0
+  for line in response
+    if strwidth(line) > wrap_width
+      softwrap_lines += float2nr(ceil(strwidth(line) / wrap_width))
+    else
+      softwrap_lines += 1
+    endif
+  endfor
+
+  var total_response_length = softwrap_lines + 2
+  var height = winheight(0)
+  if total_response_length >= height
+    execute 'normal! ' .. response_start .. 'Gzt'
   else
     execute 'normal! G'
   endif
-  call setcursorcharpos(0, 3)
+  setcursorcharpos(0, 3)
+enddef
 
-endfunction
-
-function! copilot_chat#api#handle_job_error(channel, msg) abort
-  if type(a:msg) == v:t_list
-    let l:filtered_errors = filter(copy(a:msg), '!empty(v:val)')
-    if len(l:filtered_errors) > 0
-      echom l:filtered_errors
+def HandleJobError(channel: any, msg: list<any>)
+  if type(msg) == v:t_list
+    var filtered_errors = filter(copy(msg), '!empty(v:val)')
+    if len(filtered_errors) > 0
+      echom filtered_errors
     endif
   else
-    echom a:msg
+    echom msg
   endif
-endfunction
+enddef
 
-function! copilot_chat#api#fetch_models(chat_token) abort
-  let l:chat_headers = [
-    \ 'Content-Type: application/json',
-    \ 'Authorization: Bearer ' . a:chat_token,
-    \ 'Editor-Version: vscode/1.80.1'
-    \ ]
+export def FetchModels(chat_token: string): any
+  var chat_headers = [
+    'Content-Type: application/json',
+    $'Authorization: Bearer {chat_token}',
+    'Editor-Version: vscode/1.80.1'
+  ]
 
-  let l:response = copilot_chat#http('GET', 'https://api.githubcopilot.com/models', l:chat_headers, {})
+  var response = Http('GET', 'https://api.githubcopilot.com/models', chat_headers, {})
+  var model_list = []
   try
-    let l:json_response = json_decode(l:response)
-    let l:model_list = []
-    for item in l:json_response.data
-        if has_key(item, 'id')
-            call add(l:model_list, item.id)
-        endif
+    var json_response = json_decode(response)
+    for item in json_response.data
+      if has_key(item, 'id')
+        add(model_list, item.id)
+      endif
     endfor
-    return l:model_list
+    return model_list
+  catch
+    echo 'ruh'
+    return model_list
   endtry
+enddef
 
-  return l:response
-endfunction
+export def Http(method: string, url: string, headers: list<any>, body: any): string
+  var response = ''
+  if has('win32')
+    var ps_cmd = 'powershell -Command "'
+    ps_cmd ..= '$headers = @{'
+    for header in headers
+      var parts = split(header, ': ')
+      var key = parts[0]
+      var value = parts[1]
+      ps_cmd ..= "'" .. key .. "'='" .. value .. "';"
+    endfor
+    ps_cmd ..= '};'
+    if method !=# 'GET'
+      ps_cmd ..= '$body = ConvertTo-Json @{'
+      for obj in keys(body)
+        ps_cmd ..= obj .. "='" .. body[obj] .. "';"
+      endfor
+      ps_cmd ..= '};'
+    endif
+    ps_cmd ..= "Invoke-WebRequest -Uri '" .. url .. "' -Method " .. method .. " -Headers $headers -Body $body -ContentType 'application/json' | Select-Object -ExpandProperty Content"
+    ps_cmd ..= '"'
+    response = system(ps_cmd)
+  else
+    var token_data = json_encode(body)
 
-" vim:set ft=vim sw=2 sts=2 et:
+    var curl_cmd = 'curl -s -X ' .. method .. ' --compressed '
+    for header in headers
+      curl_cmd ..= '-H "' .. header .. '" '
+    endfor
+    curl_cmd ..= "-d '" .. token_data .. "' " .. url
+
+    response = system(curl_cmd)
+    if v:shell_error != 0
+      echom 'Error: ' .. v:shell_error
+      return ''
+    endif
+  endif
+  return response
+enddef

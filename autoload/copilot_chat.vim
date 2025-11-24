@@ -1,155 +1,118 @@
+vim9script
 scriptencoding utf-8
 
-function! copilot_chat#open_chat() abort
-  if copilot_chat#auth#verify_signin() != v:null
-    if copilot_chat#buffer#has_active_chat() &&
-       \  g:copilot_reuse_active_chat == 1
-      call copilot_chat#buffer#focus_active_chat()
+import autoload 'copilot_chat/auth.vim' as auth
+import autoload 'copilot_chat/buffer.vim' as _buffer
+import autoload 'copilot_chat/api.vim' as api
+
+export def OpenChat()
+  if auth.VerifySignin() != v:null
+    if _buffer.HasActiveChat() && g:copilot_reuse_active_chat == 1
+      _buffer.FocusActiveChat()
     else
-      call copilot_chat#buffer#create()
+      _buffer.Create()
     normal! G
     endif
   endif
-endfunction
+enddef
 
-function! copilot_chat#start_chat(message) abort
-  call copilot_chat#open_chat()
-  call copilot_chat#buffer#append_message(a:message)
-  call copilot_chat#api#async_request([{'content': a:message, 'role': 'user'}], [])
-endfunction
+export def StartChat(message: string)
+  OpenChat()
+  _buffer.AppendMessage(message)
+  api.AsyncRequest([{'content': message, 'role': 'user'}], [])
+enddef
 
-function! copilot_chat#reset_chat() abort
+export def ResetChat()
   if g:copilot_chat_active_buffer == -1 || !bufexists(g:copilot_chat_active_buffer)
     echom 'No active chat window to reset'
     return
   endif
 
-  let l:current_buf = bufnr('%')
+  var current_buf = bufnr('%')
 
-  " Switch to the active chat buffer if not already there
-  if l:current_buf != g:copilot_chat_active_buffer
-    execute 'buffer ' . g:copilot_chat_active_buffer
+  # Switch to the active chat buffer if not already there
+  if current_buf != g:copilot_chat_active_buffer
+    execute 'buffer ' .. g:copilot_chat_active_buffer
   endif
 
   silent! %delete _
 
-  call copilot_chat#buffer#welcome_message()
+  _buffer.WelcomeMessage()
 
   normal! G
 
-  if l:current_buf != g:copilot_chat_active_buffer && bufexists(l:current_buf)
-    execute 'buffer ' . l:current_buf
+  if current_buf != g:copilot_chat_active_buffer && bufexists(current_buf)
+    execute 'buffer ' .. current_buf
   endif
-endfunction
+enddef
 
-function! copilot_chat#submit_message() abort
-  let l:messages = []
-  let l:responses = []
-  let l:pattern = ' ━\+$'
-  let l:all_file_lists = []
-  call cursor(1,1)
+export def SubmitMessage()
+  var messages = []
+  var pattern = ' ━\+$'
+  var all_file_lists = []
+  cursor(1, 1)
 
-  while search(l:pattern, 'W') > 0
-    let l:header_line = getline('.')
-    let l:role = 'user'
-    " Check separator icon to determine message role
-    " Separator with  icon indicates assistant response, otherwise user message
-    if stridx(l:header_line, ' ') != -1
-      let l:role = 'assistant'
+  while search(pattern, 'W') > 0
+    var header_line = getline('.')
+    var role = 'user'
+    # Check separator icon to determine message role
+    # Separator with  icon indicates assistant response, otherwise user message
+    if stridx(header_line, ' ') != -1
+      role = 'assistant'
     endif
-    let l:start_line = line('.') + 1
-    let l:end_line = search(l:pattern, 'W')
-    if l:end_line == 0
-      let l:end_line = line('$')
+    var start_line = line('.') + 1
+    var end_line = search(pattern, 'W')
+    if end_line == 0
+      end_line = line('$')
     else
-      let l:end_line -= 1
-      call cursor(line('.')-1, col('.'))
+      end_line -= 1
+      cursor(line('.') - 1, col('.'))
     endif
 
-    let l:lines = getline(l:start_line, l:end_line)
-    let l:file_list = []
+    var lines = getline(start_line, end_line)
+    var file_list = []
 
-    for l:i in range(len(l:lines))
-      let l:line = l:lines[l:i]
-      if l:line =~? '^> \(\w\+\)'
-        let l:text = matchstr(l:line, '^> \(\w\+\)')
-        let l:text = substitute(l:text, '^> ', '', '')
-        if has_key(g:copilot_chat_prompts, l:text)
-          let l:lines[l:i] = g:copilot_chat_prompts[l:text]
+    for i in range(len(lines))
+      var line = lines[i]
+      if line =~? '^> \(\w\+\)'
+        var text = matchstr(line, '^> \(\w\+\)')
+        text = substitute(text, '^> ', '', '')
+        if has_key(g:copilot_chat_prompts, text)
+          lines[i] = g:copilot_chat_prompts[text]
         endif
-      elseif l:line =~? '^#file:'
-        let l:filename = matchstr(l:line, '^#file:\s*\zs.*\ze$')
-        call add(l:file_list, l:filename)
+      elseif line =~? '^#file: '
+        var filename = matchstr(line, '^#file: \s*\zs.*\ze$')
+        add(file_list, filename)
       endif
     endfor
-    let l:message = join(l:lines, "\n")
+    var message = join(lines, "\n")
 
-    call add(l:messages, {'content': l:message, 'role': l:role})
-    call add(l:all_file_lists, l:file_list)
-    call cursor(line('.'), col('.') + 1)
+    add(messages, {'content': message, 'role': role})
+    add(all_file_lists, file_list)
+    cursor(line('.'), col('.') + 1)
   endwhile
 
-  " Limit message history to improve performance
-  " Only send the most recent messages based on configuration
-  let l:limit = g:copilot_chat_message_history_limit
-  if len(l:messages) > l:limit && l:limit > 0
-    let l:start_idx = len(l:messages) - l:limit
-    let l:messages = l:messages[l:start_idx :]
-    let l:all_file_lists = l:all_file_lists[l:start_idx :]
+  # Limit message history to improve performance
+  # Only send the most recent messages based on configuration
+  var limit = g:copilot_chat_message_history_limit
+  if len(messages) > limit && limit > 0
+    var start_idx = len(messages) - limit
+    messages = messages[start_idx : ]
+    all_file_lists = all_file_lists[start_idx : ]
   endif
 
-  " Consolidate file lists from recent messages
-  " O(n) consolidation using dictionary for O(1) duplicate detection (improved from O(n²))
-  let l:consolidated_files = []
-  let l:seen = {}
-  for l:files in l:all_file_lists
-    for l:file in l:files
-      if !has_key(l:seen, l:file)
-        let l:seen[l:file] = 1
-        call add(l:consolidated_files, l:file)
+  # Consolidate file lists from recent messages
+  # O(n) consolidation using dictionary for O(1) duplicate detection (improved from O(n²))
+  var consolidated_files = []
+  var seen = {}
+  for files in all_file_lists
+    for file in files
+      if !has_key(seen, file)
+        seen[file] = 1
+        add(consolidated_files, file)
       endif
     endfor
   endfor
 
-  call copilot_chat#api#async_request(l:messages, l:consolidated_files)
-endfunction
-
-
-function! copilot_chat#http(method, url, headers, body) abort
-  if has('win32')
-    let l:ps_cmd = 'powershell -Command "'
-    let l:ps_cmd .= '$headers = @{'
-    for header in a:headers
-      let [key, value] = split(header, ': ')
-      let l:ps_cmd .= "'" . key . "'='" . value . "';"
-    endfor
-    let l:ps_cmd .= '};'
-    if a:method !=# 'GET'
-      let l:ps_cmd .= '$body = ConvertTo-Json @{'
-      for obj in keys(a:body)
-        let l:ps_cmd .= obj . "='" . a:body[obj] . "';"
-      endfor
-      let l:ps_cmd .= '};'
-    endif
-    let l:ps_cmd .= "Invoke-WebRequest -Uri '" . a:url . "' -Method " .a:method . " -Headers $headers -Body $body -ContentType 'application/json' | Select-Object -ExpandProperty Content"
-    let l:ps_cmd .= '"'
-    let l:response = system(l:ps_cmd)
-  else
-    let l:token_data = json_encode(a:body)
-
-    let l:curl_cmd = 'curl -s -X ' . a:method . ' --compressed '
-    for header in a:headers
-      let l:curl_cmd .= '-H "' . header . '" '
-    endfor
-    let l:curl_cmd .= "-d '" . l:token_data . "' " . a:url
-
-    let l:response = system(l:curl_cmd)
-    if v:shell_error != 0
-      echom 'Error: ' . v:shell_error
-      return ''
-    endif
-  endif
-  return l:response
-endfunction
-
-" vim:set ft=vim sw=2 sts=2 et:
+  api.AsyncRequest(messages, consolidated_files)
+enddef

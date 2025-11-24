@@ -1,3 +1,4 @@
+vim9script
 scriptencoding utf-8
 
 syntax match CopilotWelcome /^Welcome to Copilot Chat!.*$/
@@ -25,5 +26,3 @@ highlight CopilotFiles ctermfg=12 guifg=#1E90FF
 if !exists('g:syntax_on')
   syntax enable
 endif
-
-" vim:set ft=vim sw=2 sts=2 et:

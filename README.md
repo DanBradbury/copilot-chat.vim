@@ -13,7 +13,7 @@ Nvim folks will be able to use [CopilotChat.nvim](https://github.com/CopilotC-Nv
 
 ## Requirements
 
-- [Vim](https://github.com/vim/vim)
+- [Vim>9.0](https://github.com/vim/vim)
 - [NerdFonts](https://www.nerdfonts.com) (Optional for pretty icons)
 
 ## Installation

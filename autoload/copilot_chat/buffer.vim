@@ -1,37 +1,41 @@
+vim9script
 scriptencoding utf-8
-let s:colors_gui = ['#33FF33', '#4DFF33', '#66FF33', '#80FF33', '#99FF33', '#B3FF33', '#CCFF33', '#E6FF33', '#FFFF33']
-let s:colors_cterm = [46, 118, 154, 190, 226, 227, 228, 229, 230]
-let s:color_index = 0
-let s:chat_count = 1
-let s:completion_active = 0
-let s:syntax_timer = -1
-let s:file_completion_timer = -1
-let s:file_list_cache = []
-let s:file_list_cache_time = 0
 
-function! copilot_chat#buffer#winsplit() abort
+import autoload 'copilot_chat/config.vim' as config
+
+var colors_gui = ['#33FF33', '#4DFF33', '#66FF33', '#80FF33', '#99FF33', '#B3FF33', '#CCFF33', '#E6FF33', '#FFFF33']
+var colors_cterm = [46, 118, 154, 190, 226, 227, 228, 229, 230]
+var color_index = 0
+var chat_count = 1
+var completion_active = 0
+var syntax_timer = -1
+var file_completion_timer = -1
+var file_list_cache: list<string> = []
+var file_list_cache_time = 0
+var copilot_list_chat_buffer = get(g:, 'copilot_list_chat_buffer', 0)
+var copilot_chat_open_on_toggle = get(g:, 'copilot_chat_open_on_toggle', 1)
+var waiting_timer = 0
+
+def WindowSplit()
+  var position = config.GetValue('window_position', 'right')
   if exists('g:copilot_chat_window_position')
-    let l:position = g:copilot_chat_window_position
-  else
-    let l:position = copilot_chat#config#get_value('window_position', 'right')
+    position = g:copilot_chat_window_position
   endif
 
-  " Create split based on position
-  if l:position ==# 'right'
+  # Create split based on position
+  if position ==# 'right'
     rightbelow vsplit
-  elseif l:position ==# 'left'
+  elseif position ==# 'left'
     leftabove vsplit
-  elseif l:position ==# 'top'
+  elseif position ==# 'top'
     topleft split
-  elseif l:position ==# 'bottom'
+  elseif position ==# 'bottom'
     botright split
   endif
-endfunction
+enddef
 
-let s:copilot_list_chat_buffer = get(g:, 'copilot_list_chat_buffer', 0)
-
-function! copilot_chat#buffer#create() abort
-  call copilot_chat#buffer#winsplit()
+export def Create(): any
+  WindowSplit()
 
   enew
 
@@ -39,22 +43,22 @@ function! copilot_chat#buffer#create() abort
   setlocal bufhidden=hide
   setlocal noswapfile
   setlocal filetype=copilot_chat
-  if s:copilot_list_chat_buffer == 0
+  if copilot_list_chat_buffer == 0
     setlocal nobuflisted
   endif
 
-  " Set buffer name
-  execute 'file CopilotChat-' . s:chat_count
-  let s:chat_count += 1
+  # Set buffer name
+  execute 'file CopilotChat-' .. chat_count
+  chat_count += 1
 
-  " Save buffer number for reference
-  let g:copilot_chat_active_buffer = bufnr('%')
-  let b:added_syntaxes = []
-  call copilot_chat#buffer#welcome_message()
+  # Save buffer number for reference
+  g:copilot_chat_active_buffer = bufnr('%')
+  b:added_syntaxes = []
+  WelcomeMessage()
   return g:copilot_chat_active_buffer
-endfunction
+enddef
 
-function! copilot_chat#buffer#has_active_chat() abort
+export def HasActiveChat(): number
   if g:copilot_chat_active_buffer == -1
     return 0
   endif
@@ -63,374 +67,369 @@ function! copilot_chat#buffer#has_active_chat() abort
     return 0
   endif
 
-  let l:buf = getbufinfo(g:copilot_chat_active_buffer)
-  if empty(l:buf)
+  var buf = getbufinfo(g:copilot_chat_active_buffer)
+  if empty(buf)
     return 0
   endif
 
   return 1
-endfunction
+enddef
 
-function! copilot_chat#buffer#focus_active_chat() abort
-  let l:current_buf = bufnr('%')
+export def FocusActiveChat()
+  var current_buf = bufnr('%')
   if copilot_chat#buffer#has_active_chat() == 0
     return
   endif
 
-  if l:current_buf == g:copilot_chat_active_buffer
+  if current_buf == g:copilot_chat_active_buffer
     return
   endif
-  let l:windows = getwininfo()
-  for l:win in range(len(l:windows))
-    let l:win_info = l:windows[l:win]
-    if l:win_info.bufnr != g:copilot_chat_active_buffer ||
-	    \ (l:win_info.height == 0 && l:win_info.width == 0)
+  var windows = getwininfo()
+  for win in range(len(windows))
+    var win_info = windows[win]
+    if win_info.bufnr != g:copilot_chat_active_buffer ||
+	     (win_info.height == 0 && win_info.width == 0)
       continue
     endif
-    " We found an active chat buffer in the current window display, so
-    " switch to it.
-    execute l:win_info.winnr . ' wincmd w'
+    # We found an active chat buffer in the current window display, so
+    # switch to it.
+    execute win_info.winnr .. ' wincmd w'
     return
   endfor
 
-  " Not found in current visible windows, so create a new split
-  call copilot_chat#buffer#winsplit()
-  execute 'buffer ' . g:copilot_chat_active_buffer
-endfunction
+  # Not found in current visible windows, so create a new split
+  WindowSplit()
+  execute 'buffer ' .. g:copilot_chat_active_buffer
+enddef
 
-let s:copilot_chat_open_on_toggle = get(g:, 'copilot_chat_open_on_toggle', 1)
-function! copilot_chat#buffer#toggle_active_chat() abort
-  if copilot_chat#buffer#has_active_chat() == 0
-    if s:copilot_chat_open_on_toggle == 1
-      call copilot_chat#buffer#create()
+def ToggleActiveChat(): number
+  if HasActiveChat() == 0
+    if copilot_chat_open_on_toggle == 1
+      Create()
     endif
     return
   endif
 
-  let l:current_bufnr = bufnr('%')
-  if l:current_bufnr == g:copilot_chat_active_buffer
+  var current_bufnr = bufnr('%')
+  if current_bufnr == g:copilot_chat_active_buffer
     close
   else
-    call copilot_chat#buffer#focus_active_chat()
+    FocusActiveChat()
   endif
-endfunction
+enddef
 
-function! copilot_chat#buffer#add_input_separator() abort
-  let l:width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
-  let l:separator = ' ' . repeat('━', l:width)
-  call copilot_chat#buffer#append_message(l:separator)
-  call copilot_chat#buffer#append_message('')
-endfunction
+export def AddInputSeparator()
+  var width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
+  var separator = ' ' .. repeat('━', width)
+  AppendMessage(separator)
+  AppendMessage('')
+enddef
 
-function! copilot_chat#buffer#waiting_for_response() abort
-  call copilot_chat#buffer#append_message('Waiting for response')
-  let s:waiting_timer = timer_start(500, {-> copilot_chat#buffer#update_waiting_dots()}, {'repeat': -1})
-endfunction
+export def WaitingForResponse()
+  AppendMessage('Waiting for response')
+  #waiting_timer = timer_start(500, { -> UpdateWaitingDots()}, {'repeat': -1})
+  waiting_timer = timer_start(500, function('UpdateWaitingDots'), {'repeat': -1})
+enddef
 
-function! copilot_chat#buffer#update_waiting_dots() abort
+
+def UpdateWaitingDots(timer: any): number
   if !bufexists(g:copilot_chat_active_buffer)
-    call timer_stop(s:waiting_timer)
+    timer_stop(waiting_timer)
     return 0
   endif
 
-  let l:lines = getbufline(g:copilot_chat_active_buffer, '$')
-  if empty(l:lines)
-    call timer_stop(s:waiting_timer)
+  var lines = getbufline(g:copilot_chat_active_buffer, '$')
+  if empty(lines)
+    timer_stop(waiting_timer)
     return 0
   endif
 
-  let l:current_text = l:lines[0]
-  if l:current_text =~? '^Waiting for response'
-      let l:dots = len(matchstr(l:current_text, '\..*$'))
-      let l:new_dots = (l:dots % 3) + 1
-      call setbufline(g:copilot_chat_active_buffer, '$', 'Waiting for response' . repeat('.', l:new_dots))
-    let s:color_index = (s:color_index + 1) % len(s:colors_gui)
-    execute 'highlight CopilotWaiting guifg=' . s:colors_gui[s:color_index] . ' ctermfg=' . s:colors_cterm[s:color_index]
+  var current_text = lines[0]
+  if current_text =~? '^Waiting for response'
+      var dots = len(matchstr(current_text, '\..*$'))
+      var new_dots = (dots % 3) + 1
+      setbufline(g:copilot_chat_active_buffer, '$', $'Waiting for response{repeat('.', new_dots)}')
+    color_index = (color_index + 1) % len(colors_gui)
+    execute 'highlight CopilotWaiting guifg=' .. colors_gui[color_index] .. ' ctermfg=' .. colors_cterm[color_index]
   endif
   return 1
-endfunction
+enddef
 
-function! copilot_chat#buffer#add_selection() abort
-  if copilot_chat#buffer#has_active_chat() == 0
+export def AddSelection()
+  if HasActiveChat() == 0
     if g:copilot_chat_create_on_add_selection == 0
       return
     endif
-    " TODO: copilot_chat#buffer#create should take an argument to
-    " indicate if it should make the new buffer active or not.
-    let l:curr_win = winnr()
-    call copilot_chat#buffer#create()
-    execute l:curr_win . 'wincmd w'
+    # TODO: copilot_chat#buffer#create should take an argument to
+    # indicate if it should make the new buffer active or not.
+    var curr_win = winnr()
+    Create()
+    execute curr_win .. 'wincmd w'
   endif
 
-  " Save the current register and selection type
-  let l:save_reg = @"
-  let l:save_regtype = getregtype('"')
-  let l:filetype = &filetype
+  # Save the current register and selection type
+  var save_reg = @"
+  var save_regtype = getregtype('"')
+  var filetype = &filetype
 
-  " Get the visual selection
+  # Get the visual selection
   normal! gv"xy
 
-  " Get the content of the visual selection
-  let l:selection = getreg('x')
+  # Get the content of the visual selection
+  var selection = getreg('x')
 
-  " Restore the original register and selection type
-  call setreg('"', l:save_reg, l:save_regtype)
-  call copilot_chat#buffer#append_message('```' . l:filetype)
-  call copilot_chat#buffer#append_message(split(l:selection, "\n"))
-  call copilot_chat#buffer#append_message('```')
+  # Restore the original register and selection type
+  setreg('"', save_reg, save_regtype)
+  AppendMessage('```' .. filetype)
+  AppendMessage(split(selection, "\n"))
+  AppendMessage('```')
 
-  " Goto to the active chat buffer, either old or newly created.
+  # Goto to the active chat buffer, either old or newly created.
   if g:copilot_chat_jump_to_chat_on_add_selection == 1
-    call copilot_chat#buffer#focus_active_chat()
+    FocusActiveChat()
   endif
-endfunction
+enddef
 
-function! copilot_chat#buffer#append_message(message) abort
-  call appendbufline(g:copilot_chat_active_buffer, '$', a:message)
-endfunction
+export def AppendMessage(message: any)
+  appendbufline(g:copilot_chat_active_buffer, '$', message)
+enddef
 
-function! copilot_chat#buffer#welcome_message() abort
-  call appendbufline(g:copilot_chat_active_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
-  call copilot_chat#buffer#add_input_separator()
-endfunction
+export def WelcomeMessage()
+  appendbufline(g:copilot_chat_active_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
+  AddInputSeparator()
+enddef
 
-function! copilot_chat#buffer#set_active(bufnr) abort
-  let l:bufnr = a:bufnr
-  if l:bufnr ==# ''
-    let l:bufnr = bufnr('%')
+export def SetActive(bufnr: number)
+  if bufnr ==# ''
+    bufnr = bufnr('%')
   endif
 
-  if g:copilot_chat_active_buffer == l:bufnr
+  if g:copilot_chat_active_buffer == bufnr
     return
   endif
 
-  let bufinfo = getbufinfo(l:bufnr)
+  var bufinfo = getbufinfo(bufnr)
   if empty(bufinfo)
     echom 'Invlid buffer number'
     return
   endif
 
-  " Check if the buffer is valid
-  if getbufvar(l:bufnr, '&filetype') !=# 'copilot_chat'
+  # Check if the buffer is valid
+  if getbufvar(bufnr, '&filetype') !=# 'copilot_chat'
     echom 'Buffer is not a Copilot Chat buffer'
     return
   endif
 
-  " Set the active chat buffer to the current buffer
-  let g:copilot_chat_active_buffer = l:bufnr
-endfunction
+  # Set the active chat buffer to the current buffer
+  g:copilot_chat_active_buffer = bufnr
+enddef
 
-function! copilot_chat#buffer#on_delete(bufnr) abort
+export def OnDelete(bufnr: number)
   if g:copilot_chat_zombie_buffer != -1
-	let l:bufinfo = getbufinfo(g:copilot_chat_zombie_buffer)
-	if !empty(l:bufinfo) " Check if the buffer wasn't wiped out by the user
-		execute 'bwipeout' . g:copilot_chat_zombie_buffer
-	endif
-	let g:copilot_chat_zombie_buffer = -1
+    var bufinfo = getbufinfo(g:copilot_chat_zombie_buffer)
+    if !empty(bufinfo) # Check if the buffer wasn't wiped out by the user
+      execute 'bwipeout' .. g:copilot_chat_zombie_buffer
+    endif
+    g:copilot_chat_zombie_buffer = -1
   endif
 
-  if g:copilot_chat_active_buffer != a:bufnr
+  if g:copilot_chat_active_buffer != bufnr
     return
   endif
-  " Unset the active chat buffer
-  let g:copilot_chat_zombie_buffer = g:copilot_chat_active_buffer
-  let g:copilot_chat_active_buffer = -1
-endfunction
+  # Unset the active chat buffer
+  g:copilot_chat_zombie_buffer = g:copilot_chat_active_buffer
+  g:copilot_chat_active_buffer = -1
+enddef
 
-function! copilot_chat#buffer#resize() abort
+export def Resize()
   if g:copilot_chat_active_buffer == -1
     return
   endif
 
-  let currtab = tabpagenr()
+  var currtab = tabpagenr()
 
   for tabnr in range(1, tabpagenr('$'))
-    exec 'normal!' tabnr . 'gt'
-    let currwin = winnr()
+    exec 'normal!' tabnr .. 'gt'
+    var currwin = winnr()
 
     for winnr in range(1, winnr('$'))
-      exec winnr . 'wincmd w'
+      exec $':{winnr}wincmd w'
       if &filetype !=# 'copilot_chat'
         continue
       endif
-      let l:width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
-      let curpos = getcurpos()
-      exec '%s/^ ━\+/ ' . repeat('━', l:width) . '/ge'
-      exec '%s/^ ━\+/ ' . repeat('━', l:width) . '/ge'
-      call setpos('.', curpos)
+      var width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
+      var curpos = getcurpos()
+      exec ':%s/^ ━\+/ ' .. repeat('━', width) .. '/ge'
+      exec ':%s/^ ━\+/ ' .. repeat('━', width) .. '/ge'
+      setpos('.', curpos)
     endfor
 
-    exec currwin . 'wincmd w'
+    exec ':' .. currwin .. 'wincmd w'
   endfor
 
-  exec 'normal!' currtab . 'gt'
-endfunction
+  exec 'normal!' currtab .. 'gt'
+enddef
 
-function! copilot_chat#buffer#apply_code_block_syntax() abort
-  " Debounce syntax highlighting to avoid excessive recalculations
-  if s:syntax_timer != -1
-    call timer_stop(s:syntax_timer)
+export def ApplyCodeBlockSyntax()
+  # Debounce syntax highlighting to avoid excessive recalculations
+  if syntax_timer != -1
+    timer_stop(syntax_timer)
   endif
-  let s:syntax_timer = timer_start(g:copilot_chat_syntax_debounce_ms, {-> copilot_chat#buffer#apply_code_block_syntax_impl()})
-endfunction
+  syntax_timer = timer_start(g:copilot_chat_syntax_debounce_ms, function('ApplyCodeBlockSyntaxImpl'))
+enddef
 
-function! copilot_chat#buffer#apply_code_block_syntax_impl() abort
-  let s:syntax_timer = -1
+def ApplyCodeBlockSyntaxImpl(opt: any)
+  syntax_timer = -1
 
-  let lines = getline(1, '$')
-  let total_lines = len(lines)
+  var lines = getline(1, '$')
+  var total_lines = len(lines)
 
-  let in_code_block = 0
-  let current_lang = ''
-  let start_line = 0
-  let block_count = 0
+  var in_code_block = 0
+  var current_lang = ''
+  var start_line = 0
+  var block_count = 0
 
   for linenum in range(total_lines)
-    let line = lines[linenum]
+    var line = lines[linenum]
 
     if !in_code_block && line =~# '^```\s*\([a-zA-Z0-9_+-]\+\)$'
-      let in_code_block = 1
-      let current_lang = matchstr(line, '^```\s*\zs[a-zA-Z0-9_+-]\+\ze$')
-      let start_line = linenum + 1  " Start on next line
+      in_code_block = 1
+      current_lang = matchstr(line, '^```\s*\zs[a-zA-Z0-9_+-]\+\ze$')
+      start_line = linenum + 1  # Start on next line
 
     elseif in_code_block && line =~# '^```\s*$'
-      let end_line = linenum
+      var end_line = linenum
 
       if start_line < end_line
-        call copilot_chat#buffer#highlight_code_block(start_line, end_line, current_lang, block_count)
-        let block_count += 1
+        HighlightCodeBlock(start_line, end_line, current_lang, block_count)
+        block_count += 1
       endif
 
-      let in_code_block = 0
-      let current_lang = ''
+      in_code_block = 0
+      current_lang = ''
     endif
   endfor
   redraw
-endfunction
+enddef
 
-function! copilot_chat#buffer#highlight_code_block(start_line, end_line, lang, block_id) abort
-  let lang = a:lang
-
-  " Handle common aliases
+def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, block_id: number)
+  var lang: string = lang_arg
   if lang ==# 'js'
-    let lang = 'javascript'
+    lang = 'javascript'
   elseif lang ==# 'ts'
-    let lang = 'typescript'
+    lang = 'typescript'
   elseif lang ==# 'py'
-    let lang = 'python'
+    lang = 'python'
   endif
 
-  let syn_group = 'CopilotCode_' . lang . '_' . a:block_id
+  var syn_group = 'CopilotCode_' .. lang .. '_' .. block_id
 
-  let syntax_file = findfile('syntax/' . lang . '.vim', &runtimepath)
+  var syntax_file = findfile('syntax/' .. lang .. '.vim', &runtimepath)
   if !empty(syntax_file)
-    if index(b:added_syntaxes, '@' . lang) == -1
+    if index(b:added_syntaxes, '@' .. lang) == -1
       if exists('b:current_syntax')
         unlet b:current_syntax
       endif
-      " Use syntax relative path (otherwise may fail on windows)
-      let l:syntaxfile = 'syntax/' . lang . '.vim'
-      execute 'syntax include @' . lang . ' ' . l:syntaxfile
+      var syntaxfile = 'syntax/' .. lang .. '.vim'
+      execute 'syntax include @' .. lang .. ' ' .. syntaxfile
 
-      call add(b:added_syntaxes, '@' . lang)
+      add(b:added_syntaxes, '@' .. lang)
     endif
-    " Define syntax region for this specific code block
-    let cmd = 'syntax region ' . syn_group
-    let cmd .= ' start=/\%' . (a:start_line + 1) . 'l/'
-    let cmd .= ' end=/\%' . (a:end_line + 1) . 'l/'
-    let cmd .= ' contains=@' . lang
+    # Define syntax region for this specific code block
+    var cmd = 'syntax region ' .. syn_group
+    cmd ..= ' start=/\%' .. (start_line + 1) .. 'l/'
+    cmd ..= ' end=/\%' .. (end_line + 1) .. 'l/'
+    cmd ..= ' contains=@' .. lang
     execute cmd
   endif
-endfunction
+enddef
 
-function! copilot_chat#buffer#check_for_macro() abort
-  let current_line = getline('.')
-  let cursor_pos = col('.')
-  let before_cursor = strpart(current_line, 0, cursor_pos)
+export def CheckForMacro()
+  var current_line: string = getline('.')
+  var cursor_pos = col('.')
+  var before_cursor = strpart(current_line, 0, cursor_pos)
   if current_line =~# '/tab all'
-    " Get the position where the pattern starts
-    let pattern_start = match(before_cursor, '/tab all')
+    # Get the position where the pattern starts
+    var pattern_start = match(before_cursor, '/tab all')
 
-    " Delete the pattern
-    call cursor(line('.'), pattern_start + 1)
-    exec 'normal! d' . len('/tab all') . 'l'
+    # Delete the pattern
+    cursor(line('.'), pattern_start + 1)
+    exec 'normal! d' .. len('/tab all') .. 'l'
 
-    " Get current buffer number to exclude it
-    let current_bufnr = bufnr('%')
+    # Get current buffer number to exclude it
+    var current_bufnr = bufnr('%')
 
-    " Generate list of tabs with #file: prefix, excluding current buffer
-    let tab_list = []
+    # Generate list of tabs with #file: prefix, excluding current buffer
+    var tab_list = []
     for i in range(1, tabpagenr('$'))
-      let buffers = tabpagebuflist(i)
+      var buffers = tabpagebuflist(i)
       for buf in buffers
-        let filename = bufname(buf)
-        " Only add if it's not the current buffer and has a filename
+        var filename = bufname(buf)
+        # Only add if it's not the current buffer and has a filename
         if filename !=# '' && filename !~# 'CopilotChat'
-          " Use the relative path format instead of just the base filename
-          let display_name = '#file:' . filename
-          call add(tab_list, display_name)
+          # Use the relative path format instead of just the base filename
+          var display_name = '#file: ' .. filename
+          add(tab_list, display_name)
         endif
       endfor
-      "let winnr = tabpagewinnr(i)
-      "let buf_nr = buflist[winnr - 1]
-      "let filename = bufname(buf_nr)
+      #let winnr = tabpagewinnr(i)
+      #let buf_nr = buflist[winnr - 1]
+      #let filename = bufname(buf_nr)
 
     endfor
 
-    " Insert the tab list at cursor position, one per line
+    # Insert the tab list at cursor position, one per line
     if len(tab_list) > 0
-      " Add a newline at the end of the text to be inserted
-      let tabs_text = join(tab_list, "\n") . "\n"
-      exec 'normal! i' . tabs_text
+      # Add a newline at the end of the text to be inserted
+      var tabs_text = join(tab_list, "\n") .. "\n"
+      exec 'normal! i' .. tabs_text
     else
       exec "normal! iNo other tabs found\n"
     endif
 
-    " Position cursor on the empty line
-    call cursor(line('.'), 1)
-  elseif current_line =~# '#file:'
-    if s:completion_active == 1 && !pumvisible()
-      let s:completion_active = 0
+    # Position cursor on the empty line
+    cursor(line('.'), 1)
+  elseif current_line =~# '#file: '
+    if completion_active == 1 && !pumvisible()
+      completion_active = 0
     endif
-    if s:completion_active == 0
-      " TODO: should be resetting this after we do this
-      " let saved_completeopt = &completeopt
-      " call timer_start(0, {-> execute('let &completeopt = "' . saved_completeopt . '"')})
+    if completion_active == 0
+      # TODO: should be resetting this after we do this
+      # let saved_completeopt = &completeopt
+      # timer_start(0, {-> execute('let &completeopt = "' . saved_completeopt . '"')})
       set completeopt=menu,menuone,noinsert,noselect
-      let line = getline('.')
-      let start = match(line, '#file:') + 6
-      let typed = strpart(line, start, col('.') - start - 1)
+      var line = getline('.')
+      var start = match(line, '#file: ') + 6
+      var typed = strpart(line, start, col('.') - start - 1)
       if typed !=# '' && filereadable(typed) && !isdirectory(typed)
         return
       endif
 
-      " Cache file list to avoid repeated git/glob calls
-      let current_time = localtime()
-      let cache_expired = s:file_list_cache_time == 0 || (current_time - s:file_list_cache_time) > g:copilot_chat_file_cache_timeout
-      if empty(s:file_list_cache) || cache_expired
-        let is_git_repo = system('git rev-parse --is-inside-work-tree 2>/dev/null')
+      # Cache file list to avoid repeated git/glob calls
+      var current_time = localtime()
+      var cache_expired = file_list_cache_time == 0 || (current_time - file_list_cache_time) > g:copilot_chat_file_cache_timeout
+      if empty(file_list_cache) || cache_expired
+        var is_git_repo = system('git rev-parse --is-inside-work-tree 2>/dev/null')
 
-        if v:shell_error == 0  " We are in a git repo
-          let s:file_list_cache = systemlist('git ls-files --cached --others --exclude-standard')
+        if v:shell_error == 0  # We are in a git repo
+          file_list_cache = systemlist('git ls-files --cached --others --exclude-standard')
         else
-          let s:file_list_cache = glob('**/*', 0, 1)
+          file_list_cache = glob('**/*', 0, 1)
         endif
-        let s:file_list_cache_time = current_time
+        file_list_cache_time = current_time
       endif
 
-      " Filter out directories and prepare completion items
-      let matches = []
-      for file in s:file_list_cache
+      # Filter out directories and prepare completion items
+      var matches = []
+      for file in file_list_cache
         if !isdirectory(file) && file =~? typed
-          call add(matches, file)
+          add(matches, file)
         endif
       endfor
 
-      " Show the completion menu
-      call complete(start+1, matches)
-      let s:completion_active = 1
+      # Show the completion menu
+      complete(start + 1, matches)
+      completion_active = 1
     endif
   endif
-endfunction
-
-" vim:set ft=vim sw=2 sts=2 et:
+enddef
