@@ -63,7 +63,6 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
 enddef
 
 def HandleJobOutput(channel: any, msg: any)
-  echom curl_output
   if type(msg) == v:t_list
     for data in msg
       if data =~? '^data: {'
@@ -76,7 +75,6 @@ def HandleJobOutput(channel: any, msg: any)
 enddef
 
 def HandleJobClose(channel: any, msg: any)
-  echom curl_output
   deletebufline(g:copilot_chat_active_buffer, '$')
   var result = ''
   for line in curl_output
@@ -90,7 +88,7 @@ def HandleJobClose(channel: any, msg: any)
       catch
         result ..= "\n"
       endtry
-    else
+    elseif line =~? 'error'
       result ..= line
     endif
   endfor
@@ -145,18 +143,13 @@ export def FetchModels(chat_token: string): any
 
   var response = Http('GET', 'https://api.githubcopilot.com/models', chat_headers, {})
   var model_list = []
-  try
-    var json_response = json_decode(response)
-    for item in json_response.data
-      if has_key(item, 'id')
-        add(model_list, item.id)
-      endif
-    endfor
-    return model_list
-  catch
-    echo 'ruh'
-    return model_list
-  endtry
+  var json_response = json_decode(response)
+  for item in json_response.data
+    if has_key(item, 'id')
+      add(model_list, item.id)
+    endif
+  endfor
+  return model_list
 enddef
 
 export def Http(method: string, url: string, headers: list<any>, body: any): string

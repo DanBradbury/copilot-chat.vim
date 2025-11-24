@@ -7,7 +7,7 @@ var device_token_file = $'{g:copilot_chat_data_dir}/.device_token'
 var chat_token_file = $'{g:copilot_chat_data_dir}/.chat_token'
 
 export def VerifySignin(): string
-  var chat_token = GetChatToken(true)
+  var chat_token = GetChatToken(false)
   try
     api.FetchModels(chat_token)
   catch
