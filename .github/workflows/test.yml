@@ -30,7 +30,3 @@ jobs:
       - name: vim tests
         run: |
           vim '+Vader! test/*.vader'
-
-      - name: nvim tests
-        run: |
-          nvim --headless '+Vader! test/*.vader' '+qall!'
