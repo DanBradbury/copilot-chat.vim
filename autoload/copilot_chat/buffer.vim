@@ -224,7 +224,8 @@ export def SetActive(bufnr: number)
   g:copilot_chat_active_buffer = bufnr
 enddef
 
-export def OnDelete(bufnr: number)
+export def OnDelete(bufnr_string: string)
+  var bufnr: number = str2nr(bufnr_string)
   if g:copilot_chat_zombie_buffer != -1
     var bufinfo = getbufinfo(g:copilot_chat_zombie_buffer)
     if !empty(bufinfo) # Check if the buffer wasn't wiped out by the user

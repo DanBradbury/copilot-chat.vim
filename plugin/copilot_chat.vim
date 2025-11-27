@@ -58,12 +58,12 @@ enddef
 
 augroup CopilotChat
   autocmd!
-  autocmd FileType copilot_chat autocmd BufDelete <buffer> OnDeleteWrapper(expand('<abuf>'))
-  autocmd FileType copilot_chat autocmd BufEnter,TextChanged,TextChangedI <buffer> ApplyCodeBlockSyntaxWrapper()
-  autocmd FileType copilot_chat autocmd TextChangedI <buffer> CheckForMacroWrapper()
+  autocmd FileType copilot_chat autocmd BufDelete <buffer> _buffer.OnDelete(expand('<abuf>'))
+  autocmd FileType copilot_chat autocmd BufEnter,TextChanged,TextChangedI <buffer> _buffer.ApplyCodeBlockSyntax()
+  autocmd FileType copilot_chat autocmd TextChangedI <buffer> _buffer.CheckForMacro()
   if has('patch-9.0.0917')
-    autocmd VimResized,WinResized * ResizeWrapper()
+    autocmd VimResized,WinResized * _buffer.Resize()
   else
-    autocmd VimResized * ResizeWrapper()
+    autocmd VimResized * _buffer.Resize()
   endif
 augroup END
