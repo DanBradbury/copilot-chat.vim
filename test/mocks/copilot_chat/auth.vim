@@ -1,7 +1,7 @@
 function! copilot_chat#auth#VerifySignin()
-  return 1
+  return ''
 endfunction
 
 function! copilot_chat#auth#GetBearerToken()
-  return 1
+  return ''
 endfunction
