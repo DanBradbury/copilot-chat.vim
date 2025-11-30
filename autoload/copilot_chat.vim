@@ -68,7 +68,7 @@ export def SubmitMessage()
       cursor(line('.') - 1, col('.'))
     endif
 
-    var lines: list<string> = getline(line('.')+1, end_line)
+    var lines: list<string> = getline(line('.') + 1, end_line)
     var file_list: list<string> = []
 
     for i in range(len(lines))

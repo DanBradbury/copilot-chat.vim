@@ -67,7 +67,7 @@ export def HasActiveChat(): number
     return 0
   endif
 
-  var buf: list<dict> = getbufinfo(g:copilot_chat_active_buffer)
+  var buf: list<dict<any>> = getbufinfo(g:copilot_chat_active_buffer)
   if empty(buf)
     return 0
   endif
@@ -316,7 +316,7 @@ def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, b
   endif
 
   var syntax_file: string = findfile('syntax/' .. lang .. '.vim', &runtimepath)
-  if !syntax_file->empty
+  if !syntax_file->empty()
     if index(b:added_syntaxes, '@' .. lang) == -1
       if exists('b:current_syntax')
         unlet b:current_syntax
@@ -334,7 +334,7 @@ def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, b
   endif
 enddef
 
-export def CheckForMacro(): void
+export def CheckForMacro()
   var current_line: string = getline('.')
   var cursor_pos: number = col('.')
   var before_cursor: string = strpart(current_line, 0, cursor_pos)
@@ -393,7 +393,7 @@ export def CheckForMacro(): void
 
       # Cache file list to avoid repeated git/glob calls
       var current_time: number = localtime()
-      var cache_expired: number = file_list_cache_time == 0 || (current_time - file_list_cache_time) > g:copilot_chat_file_cache_timeout
+      var cache_expired: bool = file_list_cache_time == 0 || (current_time - file_list_cache_time) > g:copilot_chat_file_cache_timeout
       if empty(file_list_cache) || cache_expired
         system('git rev-parse --is-inside-work-tree 2>/dev/null')
 

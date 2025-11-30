@@ -16,7 +16,7 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
   # {'content': '<attachment id="kb:Name">\n#kb:\n</attachment>', 'role': 'user'}
   # for files similar
   for file in file_list
-    var file_content: string = readfile(file)
+    var file_content: list<string> = readfile(file)
     var full_path: string = fnamemodify(file, ': p')
     # TODO: get the filetype instead of just markdown
     var attachment_content: string = '<attachment id="' .. file .. '">\n````markdown\n<!-- filepath: ' .. full_path .. ' -->\n' .. join(file_content, "\n") .. '\n```</attachment>'
