@@ -17,5 +17,5 @@ jobs:
           ruby-version: '3.4'
       - name: lint
         run: |
-        gem install vinter
-        vinter .
+          gem install vinter
+          vinter .
