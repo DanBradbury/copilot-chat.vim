@@ -1,9 +1,9 @@
 vim9script
 scriptencoding utf-8
 
-var debug_buffer = -1
+var debug_buffer: number = -1
 
-export def WriteDebug(message: string)
+export def WriteDebug(message: string): void
   # Create the debug buffer if it doesn't exist
   if debug_buffer == -1 || !bufexists(debug_buffer)
     debug_buffer = bufadd('[Copilot Debug]')

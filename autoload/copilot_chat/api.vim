@@ -8,25 +8,24 @@ import autoload 'copilot_chat/models.vim' as models
 var curl_output: list<string> = []
 
 export def AsyncRequest(messages: list<any>, file_list: list<any>): job
-  var chat_token = auth.VerifySignin()
+  var chat_token: string = auth.VerifySignin()
   curl_output = []
-  var url = 'https://api.githubcopilot.com/chat/completions'
+  var url: string = 'https://api.githubcopilot.com/chat/completions'
 
   # for knowledge bases its just an attachment as the content
   # {'content': '<attachment id="kb:Name">\n#kb:\n</attachment>', 'role': 'user'}
   # for files similar
   for file in file_list
-    var file_content = readfile(file)
-    var full_path = fnamemodify(file, ': p')
+    var file_content: string = readfile(file)
+    var full_path: string = fnamemodify(file, ': p')
     # TODO: get the filetype instead of just markdown
-    var c = '<attachment id="' .. file .. '">\n````markdown\n<!-- filepath: ' .. full_path .. ' -->\n' .. join(file_content, "\n") .. '\n```</attachment>'
-    add(messages, {'content': c, 'role': 'user'})
+    var attachment_content: string = '<attachment id="' .. file .. '">\n````markdown\n<!-- filepath: ' .. full_path .. ' -->\n' .. join(file_content, "\n") .. '\n```</attachment>'
+    add(messages, {'content': attachment_content, 'role': 'user'})
   endfor
-  var v = models.Current()
 
-  var data = json_encode({
+  var data: string = json_encode({
     'intent': false,
-    'model': v,
+    'model': models.Current(),
     'temperature': 0,
     'top_p': 1,
     'n': 1,
@@ -34,10 +33,10 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
     'messages': messages
   })
 
-  var tmpfile = tempname()
+  var tmpfile: string = tempname()
   writefile([data], tmpfile)
 
-  var curl_cmd = [
+  var curl_cmd: list<string> = [
     'curl',
     '-s',
     '-X',
@@ -51,7 +50,7 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
     url
   ]
 
-  var job = job_start(curl_cmd, {
+  var job: job = job_start(curl_cmd, {
      'out_cb': function('HandleJobOutput'),
      'exit_cb': function('HandleJobClose'),
      'err_cb': function('HandleJobError')
@@ -62,7 +61,7 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
   return job
 enddef
 
-def HandleJobOutput(channel: any, msg: any)
+def HandleJobOutput(channel: any, msg: any): void
   if type(msg) == v:t_list
     for data in msg
       if data =~? '^data: {'
@@ -134,7 +133,7 @@ def HandleJobError(channel: any, msg: list<any>)
   endif
 enddef
 
-export def FetchModels(chat_token: string): any
+export def FetchModels(chat_token: string): list<string>
   var chat_headers = [
     'Content-Type: application/json',
     $'Authorization: Bearer {chat_token}',

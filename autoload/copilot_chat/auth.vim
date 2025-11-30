@@ -3,11 +3,11 @@ vim9script
 import autoload 'copilot_chat/api.vim' as api
 import autoload 'copilot_chat/config.vim' as config
 
-var device_token_file = $'{g:copilot_chat_data_dir}/.device_token'
-var chat_token_file = $'{g:copilot_chat_data_dir}/.chat_token'
+var device_token_file: string = $'{g:copilot_chat_data_dir}/.device_token'
+var chat_token_file: string = $'{g:copilot_chat_data_dir}/.chat_token'
 
 export def VerifySignin(): string
-  var chat_token = GetChatToken(false)
+  var chat_token: string = GetChatToken(false)
   try
     api.FetchModels(chat_token)
   catch

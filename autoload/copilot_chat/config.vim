@@ -3,22 +3,22 @@ scriptencoding utf-8
 
 # Generic configuration functionality
 # -----------------------------------
-var chat_config_file = g:copilot_chat_data_dir .. '/config.json'
+var chat_config_file: string = g:copilot_chat_data_dir .. '/config.json'
 
 # Read the config file on load
-var config = {}
+var config: dict<any> = {}
 if filereadable(chat_config_file)
-  var config_raw_data = join(readfile(chat_config_file), "\n")
+  var config_raw_data: string = join(readfile(chat_config_file), "\n")
   config = json_decode(config_raw_data)
 endif
 
-export def CreateDataDir()
+export def CreateDataDir(): void
   if !isdirectory(g:copilot_chat_data_dir)
     mkdir(g:copilot_chat_data_dir, 'p')
   endif
 enddef
 
-def SaveConfigFile()
+def SaveConfigFile(): void
   CreateDataDir()
   writefile([json_encode(config)], chat_config_file)
 enddef

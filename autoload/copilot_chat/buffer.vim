@@ -3,21 +3,21 @@ scriptencoding utf-8
 
 import autoload 'copilot_chat/config.vim' as config
 
-var colors_gui = ['#33FF33', '#4DFF33', '#66FF33', '#80FF33', '#99FF33', '#B3FF33', '#CCFF33', '#E6FF33', '#FFFF33']
-var colors_cterm = [46, 118, 154, 190, 226, 227, 228, 229, 230]
-var color_index = 0
-var chat_count = 1
-var completion_active = 0
-var syntax_timer = -1
-var file_completion_timer = -1
+var colors_gui: list<string> = ['#33FF33', '#4DFF33', '#66FF33', '#80FF33', '#99FF33', '#B3FF33', '#CCFF33', '#E6FF33', '#FFFF33']
+var colors_cterm: list<number> = [46, 118, 154, 190, 226, 227, 228, 229, 230]
+var color_index: number = 0
+var chat_count: number = 1
+var completion_active: number = 0
+var syntax_timer: number = -1
+var file_completion_timer: number = -1
 var file_list_cache: list<string> = []
-var file_list_cache_time = 0
-var copilot_list_chat_buffer = get(g:, 'copilot_list_chat_buffer', 0)
-var copilot_chat_open_on_toggle = get(g:, 'copilot_chat_open_on_toggle', 1)
-var waiting_timer = 0
+var file_list_cache_time: number = 0
+var copilot_list_chat_buffer: number = get(g:, 'copilot_list_chat_buffer', 0)
+var copilot_chat_open_on_toggle: number = get(g:, 'copilot_chat_open_on_toggle', 1)
+var waiting_timer: number = 0
 
 def WindowSplit()
-  var position = config.GetValue('window_position', 'right')
+  var position: string = config.GetValue('window_position', 'right')
   if exists('g:copilot_chat_window_position')
     position = g:copilot_chat_window_position
   endif
@@ -67,7 +67,7 @@ export def HasActiveChat(): number
     return 0
   endif
 
-  var buf = getbufinfo(g:copilot_chat_active_buffer)
+  var buf: list<dict> = getbufinfo(g:copilot_chat_active_buffer)
   if empty(buf)
     return 0
   endif
@@ -110,22 +110,21 @@ def ToggleActiveChat(): number
     return
   endif
 
-  var current_bufnr = bufnr('%')
-  if current_bufnr == g:copilot_chat_active_buffer
+  if bufnr('%') == g:copilot_chat_active_buffer
     close
   else
     FocusActiveChat()
   endif
 enddef
 
-export def AddInputSeparator()
-  var width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
-  var separator = ' ' .. repeat('━', width)
+export def AddInputSeparator(): void
+  var width: number = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
+  var separator: string = ' ' .. repeat('━', width)
   AppendMessage(separator)
   AppendMessage('')
 enddef
 
-export def WaitingForResponse()
+export def WaitingForResponse(): void
   AppendMessage('Waiting for response')
   #waiting_timer = timer_start(500, { -> UpdateWaitingDots()}, {'repeat': -1})
   waiting_timer = timer_start(500, function('UpdateWaitingDots'), {'repeat': -1})
@@ -138,7 +137,7 @@ def UpdateWaitingDots(timer: any): number
     return 0
   endif
 
-  var lines = getbufline(g:copilot_chat_active_buffer, '$')
+  var lines: list<string> = getbufline(g:copilot_chat_active_buffer, '$')
   if empty(lines)
     timer_stop(waiting_timer)
     return 0
@@ -162,21 +161,20 @@ export def AddSelection()
     endif
     # TODO: copilot_chat#buffer#create should take an argument to
     # indicate if it should make the new buffer active or not.
-    var curr_win = winnr()
     Create()
-    execute curr_win .. 'wincmd w'
+    execute winnr() .. 'wincmd w'
   endif
 
   # Save the current register and selection type
-  var save_reg = @"
-  var save_regtype = getregtype('"')
-  var filetype = &filetype
+  var save_reg: string = @"
+  var save_regtype: string = getregtype('"')
+  var filetype: string = &filetype
 
   # Get the visual selection
   normal! gv"xy
 
   # Get the content of the visual selection
-  var selection = getreg('x')
+  var selection: string = getreg('x')
 
   # Restore the original register and selection type
   setreg('"', save_reg, save_regtype)
@@ -190,16 +188,16 @@ export def AddSelection()
   endif
 enddef
 
-export def AppendMessage(message: any)
+export def AppendMessage(message: any): void
   appendbufline(g:copilot_chat_active_buffer, '$', message)
 enddef
 
-export def WelcomeMessage()
+export def WelcomeMessage(): void
   appendbufline(g:copilot_chat_active_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
   AddInputSeparator()
 enddef
 
-export def SetActive(bufnr: number)
+export def SetActive(bufnr: number): void
   if bufnr ==# ''
     bufnr = bufnr('%')
   endif
@@ -242,36 +240,32 @@ export def OnDelete(bufnr_string: string)
   g:copilot_chat_active_buffer = -1
 enddef
 
-export def Resize()
+export def Resize(): void
   if g:copilot_chat_active_buffer == -1
     return
   endif
 
-  var currtab = tabpagenr()
-
   for tabnr in range(1, tabpagenr('$'))
     exec 'normal!' tabnr .. 'gt'
-    var currwin = winnr()
 
     for winnr in range(1, winnr('$'))
       exec $':{winnr}wincmd w'
       if &filetype !=# 'copilot_chat'
         continue
       endif
-      var width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
-      var curpos = getcurpos()
+      var width: number = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
       exec ':%s/^ ━\+/ ' .. repeat('━', width) .. '/ge'
       exec ':%s/^ ━\+/ ' .. repeat('━', width) .. '/ge'
-      setpos('.', curpos)
+      setpos('.', getcurpos())
     endfor
 
-    exec ':' .. currwin .. 'wincmd w'
+    exec ':' .. winnr() .. 'wincmd w'
   endfor
 
-  exec 'normal!' currtab .. 'gt'
+  exec 'normal!' .. tabpagenr() .. 'gt'
 enddef
 
-export def ApplyCodeBlockSyntax()
+export def ApplyCodeBlockSyntax(): void
   # Debounce syntax highlighting to avoid excessive recalculations
   if syntax_timer != -1
     timer_stop(syntax_timer)
@@ -279,41 +273,39 @@ export def ApplyCodeBlockSyntax()
   syntax_timer = timer_start(g:copilot_chat_syntax_debounce_ms, function('ApplyCodeBlockSyntaxImpl'))
 enddef
 
-def ApplyCodeBlockSyntaxImpl(opt: any)
+def ApplyCodeBlockSyntaxImpl(opt: any): void
   syntax_timer = -1
 
-  var lines = getline(1, '$')
-  var total_lines = len(lines)
+  var lines: list<string> = getline(1, '$')
+  var in_code_block: bool = false
+  var current_lang: string = ''
+  var start_line: number = 0
+  var block_count: number = 0
 
-  var in_code_block = 0
-  var current_lang = ''
-  var start_line = 0
-  var block_count = 0
-
-  for linenum in range(total_lines)
-    var line = lines[linenum]
+  for linenum in range(len(lines))
+    var line: string = lines[linenum]
 
     if !in_code_block && line =~# '^```\s*\([a-zA-Z0-9_+-]\+\)$'
-      in_code_block = 1
+      in_code_block = true
       current_lang = matchstr(line, '^```\s*\zs[a-zA-Z0-9_+-]\+\ze$')
       start_line = linenum + 1  # Start on next line
 
     elseif in_code_block && line =~# '^```\s*$'
-      var end_line = linenum
+      var end_line: number = linenum
 
       if start_line < end_line
         HighlightCodeBlock(start_line, end_line, current_lang, block_count)
         block_count += 1
       endif
 
-      in_code_block = 0
+      in_code_block = false
       current_lang = ''
     endif
   endfor
   redraw
 enddef
 
-def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, block_id: number)
+def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, block_id: number): void
   var lang: string = lang_arg
   if lang ==# 'js'
     lang = 'javascript'
@@ -323,21 +315,18 @@ def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, b
     lang = 'python'
   endif
 
-  var syn_group = 'CopilotCode_' .. lang .. '_' .. block_id
-
-  var syntax_file = findfile('syntax/' .. lang .. '.vim', &runtimepath)
-  if !empty(syntax_file)
+  var syntax_file: string = findfile('syntax/' .. lang .. '.vim', &runtimepath)
+  if !syntax_file->empty
     if index(b:added_syntaxes, '@' .. lang) == -1
       if exists('b:current_syntax')
         unlet b:current_syntax
       endif
-      var syntaxfile = 'syntax/' .. lang .. '.vim'
-      execute 'syntax include @' .. lang .. ' ' .. syntaxfile
+      execute $'syntax include @{lang} syntax/{lang}.vim'
 
       add(b:added_syntaxes, '@' .. lang)
     endif
     # Define syntax region for this specific code block
-    var cmd = 'syntax region ' .. syn_group
+    var cmd: string = $'syntax region CopilotCode_{lang}_{block_id}'
     cmd ..= ' start=/\%' .. (start_line + 1) .. 'l/'
     cmd ..= ' end=/\%' .. (end_line + 1) .. 'l/'
     cmd ..= ' contains=@' .. lang
@@ -345,32 +334,28 @@ def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, b
   endif
 enddef
 
-export def CheckForMacro()
+export def CheckForMacro(): void
   var current_line: string = getline('.')
-  var cursor_pos = col('.')
-  var before_cursor = strpart(current_line, 0, cursor_pos)
+  var cursor_pos: number = col('.')
+  var before_cursor: string = strpart(current_line, 0, cursor_pos)
   if current_line =~# '/tab all'
     # Get the position where the pattern starts
-    var pattern_start = match(before_cursor, '/tab all')
+    var pattern_start: number = match(before_cursor, '/tab all')
 
     # Delete the pattern
     cursor(line('.'), pattern_start + 1)
     exec 'normal! d' .. len('/tab all') .. 'l'
 
-    # Get current buffer number to exclude it
-    var current_bufnr = bufnr('%')
-
     # Generate list of tabs with #file: prefix, excluding current buffer
-    var tab_list = []
+    var tab_list: list<string> = []
     for i in range(1, tabpagenr('$'))
-      var buffers = tabpagebuflist(i)
+      var buffers: list<number> = tabpagebuflist(i)
       for buf in buffers
-        var filename = bufname(buf)
+        var filename: string = bufname(buf)
         # Only add if it's not the current buffer and has a filename
         if filename !=# '' && filename !~# 'CopilotChat'
           # Use the relative path format instead of just the base filename
-          var display_name = '#file: ' .. filename
-          add(tab_list, display_name)
+          add(tab_list, $'#file: {filename}')
         endif
       endfor
       #let winnr = tabpagewinnr(i)
@@ -382,7 +367,7 @@ export def CheckForMacro()
     # Insert the tab list at cursor position, one per line
     if len(tab_list) > 0
       # Add a newline at the end of the text to be inserted
-      var tabs_text = join(tab_list, "\n") .. "\n"
+      var tabs_text: string = join(tab_list, "\n") .. "\n"
       exec 'normal! i' .. tabs_text
     else
       exec "normal! iNo other tabs found\n"
@@ -399,18 +384,18 @@ export def CheckForMacro()
       # let saved_completeopt = &completeopt
       # timer_start(0, {-> execute('let &completeopt = "' . saved_completeopt . '"')})
       set completeopt=menu,menuone,noinsert,noselect
-      var line = getline('.')
-      var start = match(line, '#file: ') + 6
-      var typed = strpart(line, start, col('.') - start - 1)
+      var line: string = getline('.')
+      var start: number = match(line, '#file: ') + 6
+      var typed: string = strpart(line, start, col('.') - start - 1)
       if typed !=# '' && filereadable(typed) && !isdirectory(typed)
         return
       endif
 
       # Cache file list to avoid repeated git/glob calls
-      var current_time = localtime()
-      var cache_expired = file_list_cache_time == 0 || (current_time - file_list_cache_time) > g:copilot_chat_file_cache_timeout
+      var current_time: number = localtime()
+      var cache_expired: number = file_list_cache_time == 0 || (current_time - file_list_cache_time) > g:copilot_chat_file_cache_timeout
       if empty(file_list_cache) || cache_expired
-        var is_git_repo = system('git rev-parse --is-inside-work-tree 2>/dev/null')
+        system('git rev-parse --is-inside-work-tree 2>/dev/null')
 
         if v:shell_error == 0  # We are in a git repo
           file_list_cache = systemlist('git ls-files --cached --others --exclude-standard')
@@ -421,7 +406,7 @@ export def CheckForMacro()
       endif
 
       # Filter out directories and prepare completion items
-      var matches = []
+      var matches: list<string> = []
       for file in file_list_cache
         if !isdirectory(file) && file =~? typed
           add(matches, file)

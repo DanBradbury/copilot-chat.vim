@@ -18,4 +18,6 @@ jobs:
       - name: lint
         run: |
           gem install vinter
-          vinter .
+          vinter autoload
+          vinter syntax
+          vinter plugin

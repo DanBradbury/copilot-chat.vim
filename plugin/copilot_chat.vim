@@ -40,19 +40,19 @@ command! -nargs=0 CopilotChatToggle _buffer.ToggleActiveChat()
 vnoremap <silent> <Plug>CopilotChatAddSelection :<C-u>call _buffer.AddSelection()<CR>
 
 #requires a wrapper for use in autocmds
-def OnDeleteWrapper(a: string)
+def OnDeleteWrapper(a: string): void
   _buffer.OnDelete(str2nr(a))
 enddef
 
-def ApplyCodeBlockSyntaxWrapper()
+def ApplyCodeBlockSyntaxWrapper(): void
   _buffer.ApplyCodeBlockSyntax()
 enddef
 
-def CheckForMacroWrapper()
+def CheckForMacroWrapper(): void
   _buffer.CheckForMacro()
 enddef
 
-def ResizeWrapper()
+def ResizeWrapper(): void
   _buffer.Resize()
 enddef
 

@@ -4,23 +4,22 @@ scriptencoding utf-8
 import autoload 'copilot_chat' as base
 import autoload 'copilot_chat/buffer' as _buffer
 
+var history_dir: string = expand('~/.vim/copilot-chat/history', 1)
 
-var history_dir = expand('~/.vim/copilot-chat/history', 1)
-
-export def Save(name)
+export def Save(name: string): string
   if !isdirectory(history_dir)
     mkdir(history_dir, 'p')
   endif
 
   # Default to current date/time if no name provided
-  var filename = empty(name) ? strftime('%Y%m%d_%H%M%S'): name
+  var filename: string = empty(name) ? strftime('%Y%m%d_%H%M%S'): name
   history_file = history_dir .. '/' .. filename .. '.json'
 
   # Get chat content
-  var chat_content = []
-  var in_user_message = 0
-  var in_assistant_message = 0
-  var current_message = {'role': '', 'content': ''}
+  var chat_content: list<string> = []
+  var in_user_message: number = 0
+  var in_assistant_message: number = 0
+  var current_message: dict<any> = {'role': '', 'content': ''}
 
   for line in getbufline(g:copilot_chat_active_buffer, 1, '$')
     # Skip welcome message and waiting lines
@@ -69,7 +68,7 @@ export def Save(name)
   return filename
 enddef
 
-export def Load(name: string)
+export def Load(name: string): number
   if !isdirectory(history_dir)
     mkdir(history_dir, 'p')
     echo 'No chat history found'
@@ -90,19 +89,19 @@ export def Load(name: string)
   endif
 
   # Load the history file
-  var chat_content = json_decode(join(readfile(history_file), "\n"))
+  var chat_content: dict<any> = json_decode(join(readfile(history_file), "\n"))
 
   # Create a new chat buffer
   base.OpenChat()
 
   # Add all messages to the buffer
-  var first_message = 1
+  var first_message: bool = true
   for message in chat_content
     if first_message
-      first_message = 0
+      first_message = false
     else
-      var width = winwidth(0) - 2
-      var separator = ' ' .. repeat('━', width)
+      var width: number = winwidth(0) - 2
+      var separator: string = ' ' .. repeat('━', width)
       appendbufline(g:copilot_chat_active_buffer, '$', separator)
     endif
 
@@ -122,7 +121,7 @@ export def Get()
     return []
   endif
 
-  return map(glob(history_dir .. '/*.json', 0, 1), {- > fnamemodify(v:val, ': t:r')})
+  return map(glob(history_dir .. '/*.json', 0, 1), {-> fnamemodify(v:val, ': t:r')})
 enddef
 
 export def Complete(a, l, p)
