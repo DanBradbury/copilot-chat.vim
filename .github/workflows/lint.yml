@@ -18,6 +18,4 @@ jobs:
       - name: lint
         run: |
           gem install vinter
-          vinter autoload
-          vinter syntax
-          vinter plugin
+          vinter . --exclude=test/

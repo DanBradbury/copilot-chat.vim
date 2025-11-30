@@ -334,7 +334,7 @@ def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, b
   endif
 enddef
 
-export def CheckForMacro()
+export def CheckForMacro(): void
   var current_line: string = getline('.')
   var cursor_pos: number = col('.')
   var before_cursor: string = strpart(current_line, 0, cursor_pos)
