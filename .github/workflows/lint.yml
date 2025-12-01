@@ -1,4 +1,4 @@
-name: Lint (vinter)
+name: Lint
 on:
   push:
     branches: [main]
