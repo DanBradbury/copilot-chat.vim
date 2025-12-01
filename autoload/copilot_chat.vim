@@ -53,8 +53,8 @@ function! copilot_chat#submit_message() abort
     let l:header_line = getline('.')
     let l:role = 'user'
     " Check separator icon to determine message role
-    " Separator with  icon indicates assistant response, otherwise user message
-    if stridx(l:header_line, ' ') != -1
+    " Separator with  icon indicates assistant response, otherwise user message
+    if stridx(l:header_line, ' ') != -1
       let l:role = 'assistant'
     endif
     let l:start_line = line('.') + 1
