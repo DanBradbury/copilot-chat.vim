@@ -56,8 +56,8 @@ export def SubmitMessage()
     var header_line = getline('.')
     var role = 'user'
     # Check separator icon to determine message role
-    # Separator with  icon indicates assistant response, otherwise user message
-    if stridx(header_line, ' ') != -1
+    # Separator with  icon indicates assistant response, otherwise user message
+    if stridx(header_line, ' ') != -1
       role = 'assistant'
     endif
     var end_line: number = search(pattern, 'W')
