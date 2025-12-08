@@ -171,7 +171,7 @@ export def AddSelection()
   var filetype: string = &filetype
 
   # Get the visual selection
-  normal gv"xy
+  :normal! gv"xy
 
   # Get the content of the visual selection
   var selection: string = getreg('x')
@@ -246,7 +246,7 @@ export def Resize(): void
   endif
 
   for tabnr in range(1, tabpagenr('$'))
-    exec 'normal ' tabnr .. 'gt'
+    exec 'normal! ' tabnr .. 'gt'
 
     for winnr in range(1, winnr('$'))
       exec $':{winnr}wincmd w'
@@ -262,7 +262,7 @@ export def Resize(): void
     exec ':' .. winnr() .. 'wincmd w'
   endfor
 
-  exec 'normal ' .. tabpagenr() .. 'gt'
+  exec 'normal! ' .. tabpagenr() .. 'gt'
 enddef
 
 export def ApplyCodeBlockSyntax(): void
@@ -344,7 +344,7 @@ export def CheckForMacro(): void
 
     # Delete the pattern
     cursor(line('.'), pattern_start + 1)
-    exec 'normal d' .. len('/tab all') .. 'l'
+    exec 'normal! d' .. len('/tab all') .. 'l'
 
     # Generate list of tabs with #file: prefix, excluding current buffer
     var tab_list: list<string> = []
@@ -368,9 +368,9 @@ export def CheckForMacro(): void
     if len(tab_list) > 0
       # Add a newline at the end of the text to be inserted
       var tabs_text: string = join(tab_list, "\n") .. "\n"
-      exec 'normal i' .. tabs_text
+      exec 'normal! i' .. tabs_text
     else
-      exec "normal iNo other tabs found\n"
+      exec "normal! iNo other tabs found\n"
     endif
 
     # Position cursor on the empty line

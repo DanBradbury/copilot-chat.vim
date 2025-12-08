@@ -111,7 +111,7 @@ export def Load(name: string): number
   # Add final separator for new input
   _buffer.AddInputSeparator()
   echo 'Loaded chat history: ' .. name
-  normal G
+  :normal! G
   return 1
 enddef
 

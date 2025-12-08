@@ -115,9 +115,9 @@ def HandleJobClose(channel: any, msg: any)
   var total_response_length = softwrap_lines + 2
   var height = winheight(0)
   if total_response_length >= height
-    execute 'normal ' .. response_start .. 'Gzt'
+    execute 'normal! ' .. response_start .. 'Gzt'
   else
-    execute 'normal G'
+    execute 'normal! G'
   endif
   setcursorcharpos(0, 3)
 enddef
