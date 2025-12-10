@@ -1,8 +1,8 @@
 vim9script
 scriptencoding utf-8
 
-import autoload 'copilot_chat' as base
-import autoload 'copilot_chat/buffer' as _buffer
+import autoload 'copilot_chat.vim' as base
+import autoload 'copilot_chat/buffer.vim' as _buffer
 
 var history_dir: string = expand('~/.vim/copilot-chat/history', 1)
 
@@ -115,17 +115,17 @@ export def Load(name: string): number
   return 1
 enddef
 
-export def Get()
+export def Get(): list<string>
   if !isdirectory(history_dir)
     mkdir(history_dir, 'p')
     return []
   endif
 
-  return map(glob(history_dir .. '/*.json', 0, 1), {-> fnamemodify(v:val, ': t:r')})
+  return map(glob(history_dir .. '/*.json', 0, 1), 'fnamemodify(v:val, ":t:r")')
 enddef
 
-export def Complete(a, l, p)
-  return matchfuzzy(copilot_chat#history#get(), a)
+export def Complete(arg_lead: string, cmd_line: any, cursor_pos: number): list<string>
+  return matchfuzzy(copilot_chat#history#get(), arg_lead)
 enddef
 
 export def List()
