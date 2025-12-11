@@ -1,5 +1,7 @@
+vim9script
+
 if exists('*copilot_chat#api#FetchModels') | delfunction copilot_chat#api#FetchModels | endif
 
-function! copilot_chat#api#FetchModels(chat_token)
+def FetchModels(chat_token: string)
   return []
-endfunction
+enddef

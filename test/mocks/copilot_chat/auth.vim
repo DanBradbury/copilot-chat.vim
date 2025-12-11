@@ -1,7 +1,9 @@
-function! copilot_chat#auth#VerifySignin()
-  return ''
-endfunction
+vim9script
 
-function! copilot_chat#auth#GetBearerToken()
+def VerifySignin(): string
   return ''
-endfunction
+enddef
+
+def GetBearerToken(): string
+  return ''
+enddef

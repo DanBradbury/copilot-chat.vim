@@ -1,3 +1,7 @@
-function! copilot_chat#models#Current()
-  return 'gpt-4o'
-endfunction
+vim9script
+
+if exists('*copilot_chat#models#Current') | delfunction copilot_chat#models#Current | endif
+
+def Current()
+  return 'gpt-40'
+enddef
