@@ -25,16 +25,16 @@ vim '+Vader! test/*' && echo Success || echo Failure
 ```
 
 ## Linting
-Linting is done with `vint`. This is a linter for Vim scripts that checks for common mistakes and style issues.
-To install `vint`, you must have Python 3 installed. You can install `vint` using pip:
+Linting is done with `vinter`. This is a linter for Vim scripts that checks for common mistakes and style issues.
+To install `vinter`, you must have Ruby installed. You can install `vinter` as a gem
 
 ```
-pip install setuptools vint
+gem install vinter
 ```
 
 To check the formatting of your code:
 ```
-vint .
+vinter .
 ```
 If you get errors be sure to fix them before committing.
 
