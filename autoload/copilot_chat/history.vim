@@ -12,11 +12,11 @@ export def Save(name: string): string
   endif
 
   # Default to current date/time if no name provided
-  var filename: string = empty(name) ? strftime('%Y%m%d_%H%M%S'): name
-  history_file = history_dir .. '/' .. filename .. '.json'
+  var filename: string = empty(name) ? strftime('%Y%m%d_%H%M%S') : name
+  var history_file = history_dir .. '/' .. filename .. '.json'
 
   # Get chat content
-  var chat_content: list<string> = []
+  var chat_content: list<dict<any>> = []
   var in_user_message: number = 0
   var in_assistant_message: number = 0
   var current_message: dict<any> = {'role': '', 'content': ''}
@@ -53,7 +53,7 @@ export def Save(name: string): string
       if empty(current_message.content) && empty(line)
         continue
       endif
-      current_message.content ..= (empty(current_message.content) ? '': "\n") .. line
+      current_message.content ..= (empty(current_message.content) ? '' : "\n") .. line
     endif
   endfor
 
@@ -75,26 +75,22 @@ export def Load(name: string): number
     return 0
   endif
 
-  # If no name provided, show available histories
   if empty(name)
     List()
     return 0
   endif
 
-  history_file = history_dir .. '/' .. name .. '.json'
+  var history_file = history_dir .. '/' .. name .. '.json'
 
   if !filereadable(history_file)
     echo 'Chat history "' .. name .. '" not found'
     return 0
   endif
 
-  # Load the history file
-  var chat_content: dict<any> = json_decode(join(readfile(history_file), "\n"))
+  var chat_content: list<dict<any>> = json_decode(join(readfile(history_file), "\n"))
 
-  # Create a new chat buffer
   base.OpenChat()
 
-  # Add all messages to the buffer
   var first_message: bool = true
   for message in chat_content
     if first_message
@@ -108,10 +104,7 @@ export def Load(name: string): number
     appendbufline(g:copilot_chat_active_buffer, '$', split(message.content, "\n"))
   endfor
 
-  # Add final separator for new input
   _buffer.AddInputSeparator()
-  echo 'Loaded chat history: ' .. name
-  :normal! G
   return 1
 enddef
 
@@ -125,6 +118,7 @@ export def Get(): list<string>
 enddef
 
 export def Complete(arg_lead: string, cmd_line: any, cursor_pos: number): list<string>
+  #return matchfuzzy(Get(), arg_lead)
   return matchfuzzy(copilot_chat#history#get(), arg_lead)
 enddef
 
@@ -132,12 +126,12 @@ export def List()
   var histories = Get()
 
   if empty(histories)
-    echo 'No saved chat histories'
+    echom 'No saved chat histories'
     return
   endif
 
   echo 'Available chat historie '
   for history in histories
-    echo '- ' .. history
+    echom '- ' .. history
   endfor
 enddef

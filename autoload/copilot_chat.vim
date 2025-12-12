@@ -11,7 +11,6 @@ export def OpenChat(): void
       _buffer.FocusActiveChat()
     else
       _buffer.Create()
-      :normal! G
     endif
   endif
 enddef
@@ -35,11 +34,9 @@ export def ResetChat()
     execute 'buffer ' .. g:copilot_chat_active_buffer
   endif
 
-  silent! %delete _
+  deletebufline('%', 1, '$')
 
   _buffer.WelcomeMessage()
-
-  :normal! G
 
   if current_buf != g:copilot_chat_active_buffer && bufexists(current_buf)
     execute 'buffer ' .. current_buf

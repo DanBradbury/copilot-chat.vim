@@ -16,7 +16,7 @@ var copilot_list_chat_buffer: number = get(g:, 'copilot_list_chat_buffer', 0)
 var copilot_chat_open_on_toggle: number = get(g:, 'copilot_chat_open_on_toggle', 1)
 var waiting_timer: number = 0
 
-def WindowSplit()
+def WindowSplit(): void
   var position: string = config.GetValue('window_position', 'right')
   if exists('g:copilot_chat_window_position')
     position = g:copilot_chat_window_position
@@ -34,7 +34,7 @@ def WindowSplit()
   endif
 enddef
 
-export def Create(): any
+export def Create(): void
   WindowSplit()
 
   enew
@@ -43,7 +43,7 @@ export def Create(): any
   setlocal bufhidden=hide
   setlocal noswapfile
   setlocal filetype=copilot_chat
-  if copilot_list_chat_buffer == 0
+  if !copilot_list_chat_buffer
     setlocal nobuflisted
   endif
 
@@ -55,29 +55,28 @@ export def Create(): any
   g:copilot_chat_active_buffer = bufnr('%')
   b:added_syntaxes = []
   WelcomeMessage()
-  return g:copilot_chat_active_buffer
 enddef
 
-export def HasActiveChat(): number
+export def HasActiveChat(): bool
   if g:copilot_chat_active_buffer == -1
-    return 0
+    return false
   endif
 
   if !bufexists(g:copilot_chat_active_buffer)
-    return 0
+    return false
   endif
 
   var buf: list<dict<any>> = getbufinfo(g:copilot_chat_active_buffer)
   if empty(buf)
-    return 0
+    return false
   endif
 
-  return 1
+  return true
 enddef
 
 export def FocusActiveChat()
   var current_buf = bufnr('%')
-  if copilot_chat#buffer#has_active_chat() == 0
+  if !HasActiveChat()
     return
   endif
 
@@ -93,7 +92,7 @@ export def FocusActiveChat()
     endif
     # We found an active chat buffer in the current window display, so
     # switch to it.
-    execute win_info.winnr .. ' wincmd w'
+    win_gotoid(win_getid(win_info.winnr))
     return
   endfor
 
@@ -102,9 +101,9 @@ export def FocusActiveChat()
   execute 'buffer ' .. g:copilot_chat_active_buffer
 enddef
 
-def ToggleActiveChat(): number
-  if HasActiveChat() == 0
-    if copilot_chat_open_on_toggle == 1
+export def ToggleActiveChat(): void
+  if !HasActiveChat()
+    if copilot_chat_open_on_toggle
       Create()
     endif
     return
@@ -122,6 +121,7 @@ export def AddInputSeparator(): void
   var separator: string = ' ' .. repeat('━', width)
   AppendMessage(separator)
   AppendMessage('')
+  cursor(line('$'), 1)
 enddef
 
 export def WaitingForResponse(): void
@@ -155,7 +155,7 @@ def UpdateWaitingDots(timer: any): number
 enddef
 
 export def AddSelection()
-  if HasActiveChat() == 0
+  if HasActiveChat()
     if g:copilot_chat_create_on_add_selection == 0
       return
     endif
@@ -197,29 +197,29 @@ export def WelcomeMessage(): void
   AddInputSeparator()
 enddef
 
-export def SetActive(bufnr: number): void
-  if bufnr ==# ''
-    bufnr = bufnr('%')
+export def SetActive(buf: any): void
+  var safe_buf = str2nr(buf)
+  if safe_buf == 0
+    safe_buf = bufnr('%')
   endif
 
-  if g:copilot_chat_active_buffer == bufnr
+  if g:copilot_chat_active_buffer == safe_buf
     return
   endif
 
-  var bufinfo = getbufinfo(bufnr)
+  var bufinfo = getbufinfo(safe_buf)
   if empty(bufinfo)
     echom 'Invlid buffer number'
     return
   endif
 
   # Check if the buffer is valid
-  if getbufvar(bufnr, '&filetype') !=# 'copilot_chat'
+  if getbufvar(safe_buf, '&filetype') !=# 'copilot_chat'
     echom 'Buffer is not a Copilot Chat buffer'
     return
   endif
 
-  # Set the active chat buffer to the current buffer
-  g:copilot_chat_active_buffer = bufnr
+  g:copilot_chat_active_buffer = safe_buf
 enddef
 
 export def OnDelete(bufnr_string: string)
