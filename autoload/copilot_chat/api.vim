@@ -134,7 +134,7 @@ def HandleJobError(channel: any, msg: list<any>)
 enddef
 
 export def FetchModels(chat_token: string): list<string>
-  if g:copilot_chat_test_mode
+  if exists('g:copilot_chat_test_mode')
     return ['gpt-o4']
   endif
 

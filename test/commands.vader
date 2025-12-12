@@ -10,3 +10,5 @@ Execute:
   AssertEqual getline(5), 'which model am i talking to?'
   AssertEqual SyntaxAt(6,1), 'CopilotWaiting'
   AssertEqual getline('$'), 'Waiting for response'
+  exec 'CopilotChatConfig'
+  Assert bufname('%') =~ 'copilot-chat/config.json'

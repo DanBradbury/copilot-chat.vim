@@ -7,7 +7,7 @@ var device_token_file: string = $'{g:copilot_chat_data_dir}/.device_token'
 var chat_token_file: string = $'{g:copilot_chat_data_dir}/.chat_token'
 
 export def VerifySignin(): string
-  if g:copilot_chat_test_mode
+  if exists('g:copilot_chat_test_mode')
     return ''
   endif
 
@@ -50,7 +50,7 @@ def GetChatToken(fetch_new: bool): any
 enddef
 
 export def GetBearerToken(): string
-  if g:copilot_chat_test_mode
+  if exists('g:copilot_chat_test_mode')
     return ''
   endif
 
