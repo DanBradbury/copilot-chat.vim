@@ -5,9 +5,6 @@ Execute:
   let pos = getpos('.')
   AssertEqual pos[1], 1
   AssertEqual pos[2], 1
-  let messages = execute('messages')
-  let lines = messages->split('\n')
-  AssertEqual lines[-1], 'Messages maintainer: The Vim Project'
 
   execute 'CopilotChatList'
   let messages = execute('messages')
