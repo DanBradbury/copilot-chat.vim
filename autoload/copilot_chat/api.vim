@@ -134,6 +134,10 @@ def HandleJobError(channel: any, msg: list<any>)
 enddef
 
 export def FetchModels(chat_token: string): list<string>
+  if g:copilot_chat_test_mode
+    return ['gpt-o4']
+  endif
+
   var chat_headers = [
     'Content-Type: application/json',
     $'Authorization: Bearer {chat_token}',

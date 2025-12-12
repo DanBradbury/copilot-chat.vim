@@ -1,5 +1,5 @@
 Execute:
-  source ./test/mocks/copilot_chat/auth.vim
+  let g:copilot_chat_test_mode = 1
   exec 'CopilotChatOpen'
   AssertEqual SyntaxAt(1,1), 'CopilotWelcome'
   AssertEqual SyntaxAt(2,1), ''

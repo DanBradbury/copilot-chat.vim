@@ -7,6 +7,10 @@ var device_token_file: string = $'{g:copilot_chat_data_dir}/.device_token'
 var chat_token_file: string = $'{g:copilot_chat_data_dir}/.chat_token'
 
 export def VerifySignin(): string
+  if g:copilot_chat_test_mode
+    return ''
+  endif
+
   var chat_token: string = GetChatToken(false)
   try
     api.FetchModels(chat_token)
@@ -45,7 +49,11 @@ def GetChatToken(fetch_new: bool): any
   endif
 enddef
 
-def GetBearerToken(): string
+export def GetBearerToken(): string
+  if g:copilot_chat_test_mode
+    return ''
+  endif
+
   if filereadable(device_token_file)
     return join(readfile(device_token_file), "\n")
   else

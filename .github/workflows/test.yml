@@ -18,14 +18,11 @@ jobs:
 
       - name: Install + Setup Vim
         run: |
-          sudo apt-get install vim neovim
+          sudo apt-get install vim
           mkdir -p ~/.vim/bundle
           git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
           cp .devcontainer/vimrc ~/.vimrc && vim +PluginInstall +qall
           cp -r * ~/.vim/bundle/copilot-chat.vim/
-          # nvim setup
-          mkdir -p ~/.config/nvim
-          cp .devcontainer/init.vim ~/.config/nvim/init.vim
 
       - name: vim tests
         run: |
