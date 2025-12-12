@@ -37,7 +37,7 @@ command! -nargs=0 CopilotChatReset copilot.ResetChat()
 command! -nargs=? CopilotChatSetActive _buffer.SetActive(<q-args>)
 command! -nargs=0 CopilotChatToggle _buffer.ToggleActiveChat()
 
-vnoremap <silent> <Plug>CopilotChatAddSelection :<C-u>call _buffer.AddSelection()<CR>
+vnoremap <silent> <Plug>CopilotChatAddSelection :<C-u>call copilot_chat#buffer#AddSelection()<CR>
 
 #requires a wrapper for use in autocmds
 def OnDeleteWrapper(a: string): void

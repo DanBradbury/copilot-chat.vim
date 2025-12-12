@@ -121,7 +121,8 @@ export def AddInputSeparator(): void
   var separator: string = ' ' .. repeat('━', width)
   AppendMessage(separator)
   AppendMessage('')
-  cursor(line('$'), 1)
+  # required to move the cursor this way due to timing issue
+  timer_start(10, (_) => cursor(line('$'), 1))
 enddef
 
 export def WaitingForResponse(): void
@@ -155,14 +156,14 @@ def UpdateWaitingDots(timer: any): number
 enddef
 
 export def AddSelection()
-  if HasActiveChat()
-    if g:copilot_chat_create_on_add_selection == 0
+  if !HasActiveChat()
+    if !g:copilot_chat_create_on_add_selection
       return
     endif
     # TODO: copilot_chat#buffer#create should take an argument to
     # indicate if it should make the new buffer active or not.
     Create()
-    execute winnr() .. 'wincmd w'
+    execute winnr() .. ' wincmd w'
   endif
 
   # Save the current register and selection type
