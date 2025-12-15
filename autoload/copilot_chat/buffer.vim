@@ -172,7 +172,7 @@ export def AddSelection()
   var filetype: string = &filetype
 
   # Get the visual selection
-  :normal! gv"xy
+  normal! gv"xy
 
   # Get the content of the visual selection
   var selection: string = getreg('x')
@@ -245,12 +245,14 @@ export def Resize(): void
   if g:copilot_chat_active_buffer == -1
     return
   endif
+  var current_tab = tabpagenr()
 
   for tabnr in range(1, tabpagenr('$'))
-    exec 'normal! ' tabnr .. 'gt'
+    exec 'normal!' tabnr .. 'gt'
+    var current_window = winnr()
 
     for winnr in range(1, winnr('$'))
-      exec $':{winnr}wincmd w'
+      exec $':{winnr} wincmd w'
       if &filetype !=# 'copilot_chat'
         continue
       endif
@@ -260,10 +262,11 @@ export def Resize(): void
       setpos('.', getcurpos())
     endfor
 
-    exec ':' .. winnr() .. 'wincmd w'
+    #exec ':' .tabpagenr() . winnr() .. 'wincmd w'
+    exec ':' .. current_window .. ' wincmd w'
   endfor
 
-  exec 'normal! ' .. tabpagenr() .. 'gt'
+  exec 'normal! ' .. current_tab .. 'gt'
 enddef
 
 export def ApplyCodeBlockSyntax(): void
