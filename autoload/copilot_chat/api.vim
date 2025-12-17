@@ -39,7 +39,8 @@ function! copilot_chat#api#async_request(messages, file_list) abort
         \ '-H',
         \ 'Content-Type: application/json',
         \ '-H', 'Authorization: Bearer ' . l:chat_token,
-        \ '-H', 'Editor-Version: vscode/1.80.1',
+        \ '-H', 'Editor-Version: vscode/1.107.0',
+        \ '-H', 'Editor-Plugin-Version: copilot-chat/0.36.2025121601',
         \ '-d',
         \ '@' . tmpfile,
         \ l:url]
@@ -138,9 +139,9 @@ endfunction
 
 function! copilot_chat#api#fetch_models(chat_token) abort
   let l:chat_headers = [
-    \ 'Content-Type: application/json',
     \ 'Authorization: Bearer ' . a:chat_token,
-    \ 'Editor-Version: vscode/1.80.1'
+    \ 'Editor-Version: vscode/1.107.0',
+    \ 'Editor-Plugin-Version: copilot-chat/0.36.2025121601',
     \ ]
 
   let l:response = copilot_chat#http('GET', 'https://api.githubcopilot.com/models', l:chat_headers, {})

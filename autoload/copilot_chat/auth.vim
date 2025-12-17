@@ -20,8 +20,9 @@ function! copilot_chat#auth#get_chat_token(fetch_new) abort
     let l:bearer_token = copilot_chat#auth#get_bearer_token()
     let l:token_url = 'https://api.github.com/copilot_internal/v2/token'
     let l:token_headers = [
+      \ 'Accept: application/json',
+      \ 'Accept-Encoding: gzip,deflate,br',
       \ 'Content-Type: application/json',
-      \ 'Editor-Version: vscode/1.80.1',
       \ 'Authorization: token ' . l:bearer_token,
       \ ]
     let l:token_data = {
@@ -63,10 +64,7 @@ function! copilot_chat#auth#get_bearer_token() abort
       \ }
       let l:token_headers = [
         \ 'Accept: application/json',
-        \ 'User-Agent: GithubCopilot/1.155.0',
         \ 'Accept-Encoding: gzip,deflate,br',
-        \ 'Editor-Plugin-Version: copilot.vim/1.16.0',
-        \ 'Editor-Version: vim/9.0.1',
         \ 'Content-Type: application/json',
         \ ]
 
@@ -83,10 +81,7 @@ function! copilot_chat#auth#get_device_token() abort
   let l:token_url = 'https://github.com/login/device/code'
   let l:headers = [
     \ 'Accept: application/json',
-    \ 'User-Agent: GithubCopilot/1.155.0',
     \ 'Accept-Encoding: gzip,deflate,br',
-    \ 'Editor-Plugin-Version: copilot.vim/1.16.0',
-    \ 'Editor-Version: Neovim/0.6.1',
     \ 'Content-Type: application/json',
     \ ]
   let l:data = {
