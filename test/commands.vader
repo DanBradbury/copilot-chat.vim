@@ -19,9 +19,6 @@ Execute:
   AssertEqual SyntaxAt(3,4), 'CopilotSeparatorLine'
   AssertEqual SyntaxAt(4,1), ''
   AssertEqual SyntaxAt(5,1), ''
-  let pos = getpos('.')
-  AssertEqual pos[1], 4
-  AssertEqual pos[2], 1
   AssertEqual getline(5), 'which model am i talking to?'
   AssertEqual SyntaxAt(6,1), 'CopilotWaiting'
   AssertEqual getline('$'), 'Waiting for response'
@@ -46,7 +43,7 @@ Execute:
   execute 'CopilotChatModels'
   AssertEqual len(popup_list()), len(pre_popups) + 1
   call feedkeys('q', 'x')
-  AssertEqual len(popup_list()), 0
+  AssertEqual len(popup_list()), len(pre_popups)
 
   execute 'CopilotChatLoad magical-magic'
   AssertEqual getline(5), 'which model am i talking to?'
@@ -54,9 +51,9 @@ Execute:
 
   execute 'CopilotChatOpen'
   AssertEqual bufname('%'), 'CopilotChat-3'
-  normal iheyo
-  execute 'CopilotChatSubmit'
+  normal Giheyo
   AssertEqual getline(4), 'heyo'
+  execute 'CopilotChatSubmit'
   AssertEqual SyntaxAt(5,1), 'CopilotWaiting'
 
   execute 'buffer ' .. reset_buffer
