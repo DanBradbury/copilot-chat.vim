@@ -15,13 +15,13 @@ export def OpenChat(): void
   endif
 enddef
 
-export def StartChat(message: string)
+export def StartChat(message: string): void
   OpenChat()
   _buffer.AppendMessage(message)
   api.AsyncRequest([{'content': message, 'role': 'user'}], [])
 enddef
 
-export def ResetChat()
+export def ResetChat(): void
   if g:copilot_chat_active_buffer == -1 || !bufexists(g:copilot_chat_active_buffer)
     echom 'No active chat window to reset'
     return
@@ -43,7 +43,7 @@ export def ResetChat()
   endif
 enddef
 
-export def SubmitMessage()
+export def SubmitMessage(): void
   var messages = []
   var pattern = ' ━\+$'
   var all_file_lists = []

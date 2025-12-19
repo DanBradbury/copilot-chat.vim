@@ -122,7 +122,7 @@ export def Complete(arg_lead: string, cmd_line: any, cursor_pos: number): list<s
   return matchfuzzy(copilot_chat#history#get(), arg_lead)
 enddef
 
-export def List()
+export def List(): void
   var histories = Get()
 
   if empty(histories)

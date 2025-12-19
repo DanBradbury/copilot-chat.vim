@@ -27,11 +27,11 @@ export def GetValue(key: string, default: any): any
   return get(config, key, default)
 enddef
 
-export def SetValue(key: string, value: any)
+export def SetValue(key: string, value: any): void
   config[key] = value
   SaveConfigFile()
 enddef
 
-export def View()
+export def View(): void
   execute 'vsplit ' .. chat_config_file
 enddef

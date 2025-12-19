@@ -74,7 +74,7 @@ export def HasActiveChat(): bool
   return true
 enddef
 
-export def FocusActiveChat()
+export def FocusActiveChat(): void
   var current_buf = bufnr('%')
   if !HasActiveChat()
     return
@@ -155,7 +155,7 @@ def UpdateWaitingDots(timer: any): number
   return 1
 enddef
 
-export def AddSelection()
+export def AddSelection(): void
   if !HasActiveChat()
     if !g:copilot_chat_create_on_add_selection
       return
@@ -223,7 +223,7 @@ export def SetActive(buf: any): void
   g:copilot_chat_active_buffer = safe_buf
 enddef
 
-export def OnDelete(bufnr_string: string)
+export def OnDelete(bufnr_string: string): void
   var bufnr: number = str2nr(bufnr_string)
   if g:copilot_chat_zombie_buffer != -1
     var bufinfo = getbufinfo(g:copilot_chat_zombie_buffer)

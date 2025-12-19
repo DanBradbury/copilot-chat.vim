@@ -41,7 +41,7 @@ export def FilterModels(winid: number, key: string): number
   return 1
 enddef
 
-export def Select()
+export def Select(): void
   g:copilot_popup_selection = index(available_models, Current())
   if g:copilot_popup_selection ==? -1
     g:copilot_popup_selection = 0
