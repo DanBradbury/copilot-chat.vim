@@ -131,7 +131,7 @@ function! copilot_chat#http(method, url, headers, body) abort
       endfor
       let l:ps_cmd .= '};'
     endif
-    let l:ps_cmd .= "Invoke-WebRequest -Uri '" . a:url . "' -Method " .a:method . " -Headers $headers -Body $body -ContentType 'application/json' | Select-Object -ExpandProperty Content"
+    let l:ps_cmd .= "Invoke-WebRequest -Uri '" . a:url . "' -Method " .a:method . " -Headers $headers -Body $body -ContentType 'application/json' -UseBasicParsing | Select-Object -ExpandProperty Content"
     let l:ps_cmd .= '"'
     let l:response = system(l:ps_cmd)
   else
