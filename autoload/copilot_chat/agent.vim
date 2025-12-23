@@ -22,32 +22,12 @@ export def CreateFile(outcome: dict<any>)
   writefile(split(content, "\n", 1), path)
 enddef
 
-export def ApplyPatch()
-  echom 'apply patch magic'
-  # Expect "input" containing the patch text and an "explanation" (ignored here)
-  if !has_key(args, 'input')
-    echom 'apply_patch: missing "input" argument'
-    return
-  endif
-
+export def ApplyPatch(outcome: dict<any>)
+  var args = json_decode(outcome['arguments'])
   var patch_text = args['input']
-  if type(patch_text) != type('')
-    echom 'apply_patch: input must be a string'
-    return
-  endif
 
-  # Basic validation
-  if strlen(patch_text) == 0
-    echom 'apply_patch: empty patch'
-    return
-  endif
-  if match(patch_text, '^\\*\\*\\* Begin Patch') != 0
+  if match(patch_text, '^\*\*\* Begin Patch') != 0
     echom 'apply_patch: patch must start with "*** Begin Patch"'
-    return
-  endif
-  if match(patch_text, '\\*\\*\\* End Patch$') == -1 && match(patch_text, '\\*\\*\\* End Patch\\n') == -1
-    # allow end sentinel at EOF or with newline
-    echom 'apply_patch: missing "*** End Patch" sentinel'
     return
   endif
 
@@ -61,28 +41,30 @@ export def ApplyPatch()
       var ln = lines[i]
 
       # Skip initial Begin Patch sentinel and blank lines
-      if ln =~# '^\\*\\*\\* Begin Patch'
-        let i += 1
+      if ln =~# '^\*\*\* Begin Patch'
+        i += 1
         continue
       endif
-      if ln =~# '^\\*\\*\\* End Patch'
+      if ln =~# '^\*\*\* End Patch'
         break
       endif
       if ln =~# '^\\s*$'
-        let i += 1
+        i += 1
         continue
       endif
+      echom ln
 
       # Match Update
-      if ln =~# '^\\*\\*\\* Update File: \\(.\\+\\)'
-        let path = substitute(ln, '^\\*\\*\\* Update File: \\(\\S\\+\\)', '\\1', '')
-        let i += 1
+      if ln =~# '^\*\*\* Update File'
+        #var path = substitute(ln, '^\*\*\* Update File: (\S\+)', '\1', '')
+        var path = ln[18 : ]
+        i += 1
 
         # Collect the section lines until next "*** " sentinel or end of patch
         var section = []
-        while i < n && lines[i] !~# '^\\*\\*\\* \\(Update\\|Delete\\|Add\\|End Patch\\)'
+        while i < n && lines[i] !~# '^\*\*\* \\(Update\\|Delete\\|Add\\|End Patch\\)'
           call add(section, lines[i])
-          let i += 1
+          i += 1
         endwhile
 
         # If file doesn't exist, error out
@@ -97,7 +79,7 @@ export def ApplyPatch()
         var new_lines = []
         for s in section
           if strlen(s) > 0 && s[0] == '+'
-            call add(new_lines, s[1:])
+            call add(new_lines, s[1 : ])
           endif
         endfor
 
@@ -117,9 +99,10 @@ export def ApplyPatch()
       endif
 
       # Match Delete
-      if ln =~# '^\\*\\*\\* Delete File: \\(.\\+\\)'
-        let path = substitute(ln, '^\\*\\*\\* Delete File: \\(\\S\\+\\)', '\\1', '')
-        let i += 1
+      if ln =~# '^\*\*\* Delete File: \\(.\\+\\)'
+        _buffer.AppendMessage('trying to delete')
+        var path = substitute(ln, '^\*\*\* Delete File: \\(\\S\\+\\)', '\\1', '')
+        i += 1
 
         if filereadable(path) == 0
           echom 'Delete File Error - missing file: ' .. path
@@ -137,14 +120,14 @@ export def ApplyPatch()
 
       # Match Add
       if ln =~# '^\\*\\*\\* Add File: \\(.\\+\\)'
-        let path = substitute(ln, '^\\*\\*\\* Add File: \\(\\S\\+\\)', '\\1', '')
-        let i += 1
+        var path = substitute(ln, '^\\*\\*\\* Add File: \\(\\S\\+\\)', '\\1', '')
+        i += 1
 
         if filereadable(path) == 1
           echom 'Add File Error - file already exists: ' .. path
           # consume section but don't overwrite
           while i < n && lines[i] !~# '^\\*\\*\\* \\(Update\\|Delete\\|Add\\|End Patch\\)'
-            let i += 1
+            i += 1
           endwhile
           continue
         endif
@@ -152,17 +135,17 @@ export def ApplyPatch()
         # Collect '+' lines for the new file content
         var add_lines = []
         while i < n && lines[i] !~# '^\\*\\*\\* \\(Update\\|Delete\\|Add\\|End Patch\\)'
-          let s = lines[i]
+          var s = lines[i]
           if strlen(s) > 0 && s[0] == '+'
-            call add(add_lines, s[1:])
+            call add(add_lines, s[1 : ])
           endif
-          let i += 1
+          i += 1
         endwhile
 
         try
           # create parent dirs if necessary
           # Vim's writefile won't create parent directories. We'll attempt to create them.
-          let parent = fnamemodify(path, ':h')
+          var parent = fnamemodify(path, ':h')
           if parent !=# '' && isdirectory(parent) == 0
             call mkdir(parent, 'p')
           endif
@@ -176,7 +159,7 @@ export def ApplyPatch()
 
       # Unknown line encountered in patch parsing
       echom 'Unknown line while parsing patch: ' .. ln
-      let i += 1
+      i += 1
     endwhile
 
     echom 'Done!'

@@ -78,7 +78,7 @@ export def InvokeTool(outcome: dict<any>): void
   var args = outcome['arguments']
 
   if function_name == 'apply_patch'
-    agent.ApplyPatch()
+    agent.ApplyPatch(outcome)
   elseif function_name == 'create_file'
     _buffer.AppendMessage('craete file is working')
     agent.CreateFile(outcome)

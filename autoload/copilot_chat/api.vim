@@ -14,7 +14,7 @@ export def AgentRequest(message: string): void
     "role": "user",
     'content': [{
       'type': 'input_text',
-      'text': '<userRequest>\ncreate a new file CONTRIBUTING2.md file\n</userRequest>'
+      'text': '<userRequest>\nUpdate the CONTRIBUTING.md file to include more emojis throughout the file\n</userRequest>'
     }]
   }
   var messages = [user_obj]
