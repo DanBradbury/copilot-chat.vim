@@ -4,8 +4,51 @@ scriptencoding utf-8
 import autoload 'copilot_chat/auth.vim' as auth
 import autoload 'copilot_chat/buffer.vim' as _buffer
 import autoload 'copilot_chat/models.vim' as models
+import autoload 'copilot_chat/tools.vim' as tools
 
 var curl_output: list<string> = []
+
+export def AgentRequest(message: string): void
+  var chat_token: string = auth.VerifySignin()
+  var user_obj = {
+    "role": "user",
+    'content': [{
+      'type': 'input_text',
+      'text': '<userRequest>\ncreate a new file CONTRIBUTING2.md file\n</userRequest>'
+    }]
+  }
+  var messages = [user_obj]
+  var url: string = 'https://api.individual.githubcopilot.com/responses'
+  var data: string = json_encode({
+    'model': models.Current(),
+    'stream': true,
+    'tools': tools.List(),
+    'input': messages
+  })
+
+  var tmpfile: string = tempname()
+  writefile([data], tmpfile)
+
+  var curl_cmd: list<string> = [
+    'curl',
+    '-s',
+    '-X',
+    'POST',
+    '-H',
+    'Content-Type: application/json',
+    '-H', 'Authorization: Bearer ' .. chat_token,
+    '-H', 'Editor-Version: vscode/1.80.1',
+    '-d',
+    $'@{tmpfile}',
+    url
+  ]
+
+  var job: job = job_start(curl_cmd, {
+     'out_cb': function('HandleAgentJobOutput'),
+     'exit_cb': function('HandleAgentJobClose'),
+     'err_cb': function('HandleAgentJobError')
+     })
+enddef
 
 export def AsyncRequest(messages: list<any>, file_list: list<any>): job
   var chat_token: string = auth.VerifySignin()
@@ -61,6 +104,47 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
   return job
 enddef
 
+def HandleAgentJobOutput(channel: any, msg: any): void
+  if type(msg) == v:t_list
+    for data in msg
+      if data =~? '^data: {'
+        add(curl_output, data)
+      endif
+    endfor
+  else
+    add(curl_output, msg)
+  endif
+enddef
+
+def HandleAgentJobClose(channel: any, msg: any)
+  echom 'job finished'
+  var a = 1
+  for line in curl_output
+    if line =~? '^data: {'
+      var json_completion = json_decode(strcharpart(line, 6))
+      try
+        if json_completion['response']['completed_at'] != v:null
+          for outcome in json_completion['response']['output']
+            if outcome['type'] == 'function_call'
+              # call the function here
+              echom 'calling function'
+              echom outcome
+              _buffer.AppendMessage(line)
+              tools.InvokeTool(outcome)
+            elseif outcome['type'] == 'message'
+              for m in outcome['content']
+                _buffer.AppendMessage(m['text'])
+              endfor
+            endif
+          endfor
+        endif
+      catch
+        a = 2
+      endtry
+    endif
+  endfor
+enddef
+
 def HandleJobOutput(channel: any, msg: any): void
   if type(msg) == v:t_list
     for data in msg
@@ -71,6 +155,10 @@ def HandleJobOutput(channel: any, msg: any): void
   else
     add(curl_output, msg)
   endif
+enddef
+
+def HandleAgentJobError(channel: any, msg: list<any>)
+  echom msg
 enddef
 
 def HandleJobClose(channel: any, msg: any)

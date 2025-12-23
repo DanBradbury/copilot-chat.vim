@@ -18,7 +18,8 @@ enddef
 export def StartChat(message: string): void
   OpenChat()
   _buffer.AppendMessage(message)
-  api.AsyncRequest([{'content': message, 'role': 'user'}], [])
+  #api.AsyncRequest([{'content': message, 'role': 'user'}], [])
+  api.AgentRequest(message)
 enddef
 
 export def ResetChat(): void
