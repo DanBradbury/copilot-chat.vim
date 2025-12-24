@@ -1,6 +1,13 @@
 vim9script
 import autoload 'copilot_chat/buffer.vim' as _buffer
 
+export def CreateDirectory(outcome: dict<any>)
+  var args = json_decode(outcome['arguments'])
+  var path = args['dirPath'][1 : ]
+  mkdir(path, 'p')
+  echom 'Create directory called'
+enddef
+
 export def CreateFile(outcome: dict<any>)
   var args = json_decode(outcome['arguments'])
   # remove the leading forward slash from the path
@@ -56,13 +63,12 @@ export def ApplyPatch(outcome: dict<any>)
 
       # Match Update
       if ln =~# '^\*\*\* Update File'
-        #var path = substitute(ln, '^\*\*\* Update File: (\S\+)', '\1', '')
-        var path = ln[18 : ]
+        var path = ln[17 : ]
         i += 1
 
         # Collect the section lines until next "*** " sentinel or end of patch
         var section = []
-        while i < n && lines[i] !~# '^\*\*\* \\(Update\\|Delete\\|Add\\|End Patch\\)'
+        while i < n && lines[i] !~# '^\*\*\* \(Update\|Delete\|Add\|End Patch\)'
           call add(section, lines[i])
           i += 1
         endwhile
@@ -99,9 +105,8 @@ export def ApplyPatch(outcome: dict<any>)
       endif
 
       # Match Delete
-      if ln =~# '^\*\*\* Delete File: \\(.\\+\\)'
-        _buffer.AppendMessage('trying to delete')
-        var path = substitute(ln, '^\*\*\* Delete File: \\(\\S\\+\\)', '\\1', '')
+      if ln =~# '^\*\*\* Delete File'
+        var path = ln[17 : ]
         i += 1
 
         if filereadable(path) == 0
@@ -119,14 +124,14 @@ export def ApplyPatch(outcome: dict<any>)
       endif
 
       # Match Add
-      if ln =~# '^\\*\\*\\* Add File: \\(.\\+\\)'
-        var path = substitute(ln, '^\\*\\*\\* Add File: \\(\\S\\+\\)', '\\1', '')
+      if ln =~# '^\*\*\* Add File'
+        var path = ln[15 : ]
         i += 1
 
         if filereadable(path) == 1
           echom 'Add File Error - file already exists: ' .. path
           # consume section but don't overwrite
-          while i < n && lines[i] !~# '^\\*\\*\\* \\(Update\\|Delete\\|Add\\|End Patch\\)'
+          while i < n && lines[i] !~# '^\*\*\* \\(Update\\|Delete\\|Add\\|End Patch\\)'
             i += 1
           endwhile
           continue
@@ -134,7 +139,7 @@ export def ApplyPatch(outcome: dict<any>)
 
         # Collect '+' lines for the new file content
         var add_lines = []
-        while i < n && lines[i] !~# '^\\*\\*\\* \\(Update\\|Delete\\|Add\\|End Patch\\)'
+        while i < n && lines[i] !~# '^\*\*\* \(Update\|Delete\|Add\|End Patch\)'
           var s = lines[i]
           if strlen(s) > 0 && s[0] == '+'
             call add(add_lines, s[1 : ])

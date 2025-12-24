@@ -123,7 +123,7 @@ def HandleAgentJobClose(channel: any, msg: any)
     if line =~? '^data: {'
       var json_completion = json_decode(strcharpart(line, 6))
       try
-        if json_completion['response']['completed_at'] != v:null
+        if json_completion['response']['output'] != v:null
           for outcome in json_completion['response']['output']
             if outcome['type'] == 'function_call'
               # call the function here

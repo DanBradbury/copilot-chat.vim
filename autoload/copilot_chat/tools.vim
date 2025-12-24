@@ -29,46 +29,46 @@ export def List(): list<any>
       "strict": false
     },
     {
-            "name": "create_directory",
-            "description": "Create a new directory structure in the workspace. Will recursively create all directories in the path, like mkdir -p. You do not need to use this tool before using create_file, that tool will automatically create the needed directories.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "dirPath": {
-                        "type": "string",
-                        "description": "The absolute path to the directory to create."
-                    }
-                },
-                "required": [
-                    "dirPath"
-                ]
-            },
-            "type": "function",
-            "strict": false
+      "name": "create_directory",
+      "description": "Create a new directory structure in the workspace. Will recursively create all directories in the path, like mkdir -p. You do not need to use this tool before using create_file, that tool will automatically create the needed directories.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "dirPath": {
+            "type": "string",
+            "description": "The absolute path to the directory to create."
+          }
         },
-        {
-            "name": "create_file",
-            "description": "This is a tool for creating a new file in the workspace. The file will be created with the specified content. The directory will be created if it does not already exist. Never use this tool to edit a file that already exists.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "filePath": {
-                        "type": "string",
-                        "description": "The absolute path to the file to create."
-                    },
-                    "content": {
-                        "type": "string",
-                        "description": "The content to write to the file."
-                    }
-                },
-                "required": [
-                    "filePath",
-                    "content"
-                ]
-            },
-            "type": "function",
-            "strict": false
-        }
+        "required": [
+          "dirPath"
+        ]
+      },
+      "type": "function",
+      "strict": false
+    },
+    {
+      "name": "create_file",
+      "description": "This is a tool for creating a new file in the workspace. The file will be created with the specified content. The directory will be created if it does not already exist. Never use this tool to edit a file that already exists.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filePath": {
+            "type": "string",
+            "description": "The absolute path to the file to create."
+          },
+          "content": {
+            "type": "string",
+            "description": "The content to write to the file."
+          }
+        },
+        "required": [
+          "filePath",
+          "content"
+        ]
+      },
+      "type": "function",
+      "strict": false
+    }
   ]
 enddef
 
@@ -82,5 +82,7 @@ export def InvokeTool(outcome: dict<any>): void
   elseif function_name == 'create_file'
     _buffer.AppendMessage('craete file is working')
     agent.CreateFile(outcome)
+  elseif function_name == 'create_directory'
+    agent.CreateDirectory(outcome)
   endif
 enddef
