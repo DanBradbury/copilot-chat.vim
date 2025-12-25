@@ -1,6 +1,49 @@
 vim9script
 import autoload 'copilot_chat/buffer.vim' as _buffer
 
+def ShowDiff(path: string, new_lines: list<string>): number
+  var tmp_old = tempname()
+  var tmp_new = tempname()
+  if filereadable(path)
+    writefile(readfile(path), tmp_old, 'b')
+  else
+    writefile([], tmp_old, 'b')
+  endif
+
+  # write proposed content to tmp_new
+  writefile(new_lines, tmp_new, 'b')
+
+  # Open a new tab and show the two files in diff mode
+  # We keep these buffers as nofile, nomodifiable and wipe on close so they don't pollute session.
+  execute 'tabnew ' .. fnameescape(tmp_old)
+  execute 'vert diffsplit ' .. fnameescape(tmp_new)
+
+  # Set sane buffer options for both sides
+  setlocal buftype=nofile bufhidden=wipe noswapfile nomodifiable
+  wincmd l
+  setlocal buftype=nofile bufhidden=wipe noswapfile nomodifiable
+  wincmd p
+  redraw!
+
+  # Prompt user (1=Yes, 2=No, 3=Apply to all, 4=Abort)
+  var choice = confirm('Apply change to ' .. path .. '?', '&Yes\n&No\n&Apply to all\n&Abort', 1)
+
+  # Close the tab we opened
+  execute 'tabclose'
+
+  if choice == 3
+    #let s:apply_all = 1
+    return 1
+  elseif choice == 1
+    return 1
+  elseif choice == 4
+    #let s:abort_apply = 1
+    return 0
+  else
+    return 0
+  endif
+enddef
+
 export def CreateDirectory(outcome: dict<any>)
   var args = json_decode(outcome['arguments'])
   var path = args['dirPath'][1 : ]
@@ -64,6 +107,9 @@ export def ApplyPatch(outcome: dict<any>)
       # Match Update
       if ln =~# '^\*\*\* Update File'
         var path = ln[17 : ]
+        if path[0] == '/'
+          path = path[1 : ]
+        endif
         i += 1
 
         # Collect the section lines until next "*** " sentinel or end of patch
@@ -90,7 +136,8 @@ export def ApplyPatch(outcome: dict<any>)
         endfor
 
         if len(new_lines) > 0
-          # Ensure parent directory exists
+          # TODO: finish diff confirmation
+          #ShowDiff(path, new_lines)
           try
             call writefile(new_lines, path, 'b')
           catch
@@ -107,6 +154,9 @@ export def ApplyPatch(outcome: dict<any>)
       # Match Delete
       if ln =~# '^\*\*\* Delete File'
         var path = ln[17 : ]
+        if path[0] == '/'
+          path = path[1 : ]
+        endif
         i += 1
 
         if filereadable(path) == 0
