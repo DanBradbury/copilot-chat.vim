@@ -57,6 +57,7 @@ export def SubmitMessage(): void
     if stridx(header_line, ' ') != -1
       role = 'assistant'
     endif
+    var start_line: number = line('.') + 1
     var end_line: number = search(pattern, 'W')
     if end_line == 0
       end_line = line('$')
@@ -65,7 +66,7 @@ export def SubmitMessage(): void
       cursor(line('.') - 1, col('.'))
     endif
 
-    var lines: list<string> = getline(line('.') + 1, end_line)
+    var lines: list<string> = getline(start_line, end_line)
     var file_list: list<string> = []
 
     for i in range(len(lines))
