@@ -1,28 +1,6 @@
 vim9script
 import autoload 'copilot_chat/buffer.vim' as _buffer
 
-def PreserveEol(path: string, lines: list<string>): list<string>
-  var has_cr = 0
-  if filereadable(path)
-    var orig = readfile(path, 'b')
-    for l in orig
-      if l =~# '\r$'
-        has_cr = 1
-        break
-      endif
-    endfor
-  endif
-
-  if has_cr
-    var out = []
-    for l in lines
-      add(out, l .. "\r")
-    endfor
-    return out
-  endif
-  return lines
-enddef
-
 def ShowDiff(path: string, new_lines: list<string>): number
   var tmp_old = tempname()
   var tmp_new = tempname()
@@ -163,7 +141,7 @@ export def ApplyPatch(outcome: dict<any>): string
           # TODO: finish diff confirmation
           #ShowDiff(path, new_lines)
           try
-            writefile(PreserveEol(path, new_lines), path, 'b')
+            writefile(new_lines, path, 'b')
           catch
             echom 'Failed to write updated file: ' .. path
           endtry
@@ -228,7 +206,7 @@ export def ApplyPatch(outcome: dict<any>): string
           if parent !=# '' && isdirectory(parent) == 0
             call mkdir(parent, 'p')
           endif
-          writefile(PreserveEol(path, add_lines), path, 'b')
+          writefile(add_lines, path, 'b')
           echom 'Added: ' .. path
         catch
           echom 'Failed to add file: ' .. path
@@ -252,6 +230,8 @@ export def ReadFile(outcome: dict<any>): string
   var args = json_decode(outcome['arguments'])
   var path = args['filePath']
   path = path[1 : ]
-  var lines = readfile(path)
+  var start_line = args['startLine'] - 1
+  var end_line = args['endLine'] - 1
+  var lines = readfile(path)[start_line : end_line]
   return join(lines, "\n")
 enddef
