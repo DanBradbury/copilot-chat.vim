@@ -5,19 +5,15 @@ import autoload 'copilot_chat/auth.vim' as auth
 import autoload 'copilot_chat/buffer.vim' as _buffer
 import autoload 'copilot_chat/models.vim' as models
 import autoload 'copilot_chat/tools.vim' as tools
+import autoload 'copilot_chat/debug.vim' as debugger
 
 var curl_output: list<string> = []
+var buffer_messages = []
+var function_calls = []
 
-export def AgentRequest(message: string): void
+export def AgentRequest(messages: list<any>): void
   var chat_token: string = auth.VerifySignin()
-  var user_obj = {
-    "role": "user",
-    'content': [{
-      'type': 'input_text',
-      'text': '<userRequest>\nUpdate the CONTRIBUTING.md file to include more emojis throughout the file\n</userRequest>'
-    }]
-  }
-  var messages = [user_obj]
+  buffer_messages = messages
   var url: string = 'https://api.individual.githubcopilot.com/responses'
   var data: string = json_encode({
     'model': models.Current(),
@@ -25,6 +21,8 @@ export def AgentRequest(message: string): void
     'tools': tools.List(),
     'input': messages
   })
+  debugger.Write('making agent request')
+  debugger.Write(data)
 
   var tmpfile: string = tempname()
   writefile([data], tmpfile)
@@ -117,30 +115,22 @@ def HandleAgentJobOutput(channel: any, msg: any): void
 enddef
 
 def HandleAgentJobClose(channel: any, msg: any)
-  echom 'job finished'
-  var a = 1
   for line in curl_output
     if line =~? '^data: {'
       var json_completion = json_decode(strcharpart(line, 6))
-      try
-        if json_completion['response']['output'] != v:null
-          for outcome in json_completion['response']['output']
-            if outcome['type'] == 'function_call'
-              # call the function here
-              echom 'calling function'
-              echom outcome
-              _buffer.AppendMessage(line)
-              tools.InvokeTool(outcome)
-            elseif outcome['type'] == 'message'
-              for m in outcome['content']
-                _buffer.AppendMessage(m['text'])
-              endfor
-            endif
-          endfor
+      if index(keys(json_completion), 'response') != -1 && json_completion['response']['output'] != v:null
+        if len(json_completion['response']['output']) > 0
+          var outcome = json_completion['response']['output'][-1]
+          if outcome['type'] == 'function_call' && index(function_calls, outcome['call_id']) == -1
+            tools.InvokeTool(outcome, buffer_messages)
+            add(function_calls, outcome['call_id'])
+          elseif outcome['type'] == 'message'
+            for m in outcome['content']
+              _buffer.AppendMessage(m['text'])
+            endfor
+          endif
         endif
-      catch
-        a = 2
-      endtry
+      endif
     endif
   endfor
 enddef

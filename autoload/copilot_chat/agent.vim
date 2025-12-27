@@ -72,13 +72,14 @@ export def CreateFile(outcome: dict<any>)
   writefile(split(content, "\n", 1), path)
 enddef
 
-export def ApplyPatch(outcome: dict<any>)
+export def ApplyPatch(outcome: dict<any>): string
   var args = json_decode(outcome['arguments'])
   var patch_text = args['input']
+  var updated_files = []
 
   if match(patch_text, '^\*\*\* Begin Patch') != 0
     echom 'apply_patch: patch must start with "*** Begin Patch"'
-    return
+    return ''
   endif
 
   # Split into lines
@@ -110,6 +111,7 @@ export def ApplyPatch(outcome: dict<any>)
         if path[0] == '/'
           path = path[1 : ]
         endif
+        add(updated_files, path)
         i += 1
 
         # Collect the section lines until next "*** " sentinel or end of patch
@@ -217,8 +219,18 @@ export def ApplyPatch(outcome: dict<any>)
       i += 1
     endwhile
 
-    echom 'Done!'
+    # TODO: show changed files with +/-
   catch
     echom 'Exception while applying patch'
   endtry
+  return $'The following files were successfully edited:\n{join(updated_files, "\n")}\n'
+enddef
+
+export def ReadFile(outcome: dict<any>): string
+  var args = json_decode(outcome['arguments'])
+  var path = args['filePath']
+  path = path[1 : ]
+  echom $'attempting to read {path}'
+  var lines = readfile(path)
+  return join(lines, "\n")
 enddef
