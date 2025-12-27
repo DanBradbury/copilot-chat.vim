@@ -28,8 +28,9 @@ def GetChatToken(fetch_new: bool): any
     var bearer_token = GetBearerToken()
     var token_url = 'https://api.github.com/copilot_internal/v2/token'
     var token_headers = [
+      'Accept: application/json',
+      'Accept-Encoding: gzip,deflate,br',
       'Content-Type: application/json',
-      'Editor-Version: vscode/1.80.1',
       $'Authorization: token {bearer_token}'
     ]
     var token_data = {
@@ -74,10 +75,7 @@ export def GetBearerToken(): string
     }
     var token_headers = [
       'Accept: application/json',
-      'User-Agent: GithubCopilot/1.155.0',
       'Accept-Encoding: gzip,deflate,br',
-      'Editor-Plugin-Version: copilot.vim/1.16.0',
-      'Editor-Version: vim/9.0.1',
       'Content-Type: application/json'
     ]
 
@@ -94,10 +92,7 @@ def GetDeviceToken(): string
   var token_url = 'https://github.com/login/device/code'
   var headers = [
     'Accept: application/json',
-    'User-Agent: GithubCopilot/1.155.0',
     'Accept-Encoding: gzip, deflate, br',
-    'Editor-Plugin-Version: copilot.vim/1.16.0',
-    'Editor-Version: Neovim/0.6.1',
     'Content-Type: application/json',
   ]
   var data = {

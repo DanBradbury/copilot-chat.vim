@@ -44,7 +44,8 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
     '-H',
     'Content-Type: application/json',
     '-H', 'Authorization: Bearer ' .. chat_token,
-    '-H', 'Editor-Version: vscode/1.80.1',
+    '-H', 'Editor-Version: vscode/1.107.0',
+    '-H', 'Editor-Plugin-Version: copilot-chat/0.36.2025121601',
     '-d',
     $'@{tmpfile}',
     url
@@ -139,9 +140,9 @@ export def FetchModels(chat_token: string): list<string>
   endif
 
   var chat_headers = [
-    'Content-Type: application/json',
     $'Authorization: Bearer {chat_token}',
-    'Editor-Version: vscode/1.80.1'
+    'Editor-Version: vscode/1.107.0',
+    'Editor-Plugin-Version: copilot-chat/0.36.2025121601'
   ]
 
   var response = Http('GET', 'https://api.githubcopilot.com/models', chat_headers, {})
@@ -174,7 +175,7 @@ export def Http(method: string, url: string, headers: list<any>, body: any): str
       endfor
       ps_cmd ..= '};'
     endif
-    ps_cmd ..= "Invoke-WebRequest -Uri '" .. url .. "' -Method " .. method .. " -Headers $headers -Body $body -ContentType 'application/json' | Select-Object -ExpandProperty Content"
+    ps_cmd ..= "Invoke-WebRequest -Uri '" .. url .. "' -Method " .. method .. " -Headers $headers -Body $body -ContentType 'application/json' -UseBasicParsing | Select-Object -ExpandProperty Content"
     ps_cmd ..= '"'
     response = system(ps_cmd)
   else
