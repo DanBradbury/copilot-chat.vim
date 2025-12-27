@@ -198,13 +198,14 @@ export def AppendResponse(message: string): void
   var separator = ' '
   separator ..= repeat('━', width)
 
-  _buffer.AppendMessage(separator)
-  _buffer.AppendMessage(m['text'])
-  _buffer.AddInputSeparator()
+  AppendMessage(separator)
+  AppendMessage(message)
+  AddInputSeparator()
 enddef
 
 export def WelcomeMessage(): void
-  appendbufline(g:copilot_chat_active_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
+  var mode = get(g:, 'copilot_chat_mode', 'Ask')
+  appendbufline(g:copilot_chat_active_buffer, 0, $'[{mode}] Welcome to Copilot Chat! Type your message below:')
   AddInputSeparator()
 enddef
 

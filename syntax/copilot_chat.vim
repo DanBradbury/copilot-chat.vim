@@ -1,7 +1,7 @@
 vim9script
 scriptencoding utf-8
 
-syntax match CopilotWelcome /^Welcome to Copilot Chat!.*$/
+syntax match CopilotWelcome /Welcome to Copilot Chat!.*$/
 syntax match CopilotSeparatorIcon /^/
 syntax match CopilotSeparatorIcon /^/
 syntax match CopilotSeparatorLine / ━\+$/
@@ -9,6 +9,8 @@ syntax match CopilotWaiting /Waiting for response\.*$/
 syntax match CopilotPrompt /^> .*/
 syntax match CopilotFiles /^#file:.*/
 syntax match CopilotToolCall /^TOOL-CALL.*/
+syntax match CopilotModeAgent /\[Agent\]/
+syntax match CopilotModeAsk /\[Ask\]/
 
 syntax match CopilotCodeFence /^```\(\s*\w\+\)\?$/ contains=CopilotCodeLang
 syntax match CopilotCodeLang /\w\+/ contained
@@ -23,7 +25,9 @@ highlight CopilotCodeFence ctermfg=240 guifg=#585858
 highlight CopilotCodeFenceEnd ctermfg=240 guifg=#585858
 highlight CopilotCodeLang ctermfg=111 guifg=#87afff
 highlight CopilotFiles ctermfg=12 guifg=#1E90FF
-highlight CopilotToolCall guibg=#ff69b4
+highlight CopilotToolCall guifg=#d7af00 guibg=#3a3a2a gui=bold ctermfg=178 ctermbg=237 cterm=bold
+highlight CopilotModeAgent guifg=#4ec9b0 gui=bold ctermfg=79 cterm=bold
+highlight CopilotModeAsk guifg=#ce9178 gui=bold ctermfg=174 cterm=bold
 
 if !exists('g:syntax_on')
   syntax enable
