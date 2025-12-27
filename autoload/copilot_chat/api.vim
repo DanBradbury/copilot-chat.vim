@@ -46,6 +46,7 @@ export def AgentRequest(messages: list<any>): void
      'exit_cb': function('HandleAgentJobClose'),
      'err_cb': function('HandleAgentJobError')
      })
+  _buffer.WaitingForResponse()
 enddef
 
 export def AsyncRequest(messages: list<any>, file_list: list<any>): job
@@ -115,6 +116,7 @@ def HandleAgentJobOutput(channel: any, msg: any): void
 enddef
 
 def HandleAgentJobClose(channel: any, msg: any)
+  deletebufline(g:copilot_chat_active_buffer, '$')
   for line in curl_output
     if line =~? '^data: {'
       var json_completion = json_decode(strcharpart(line, 6))
@@ -126,7 +128,7 @@ def HandleAgentJobClose(channel: any, msg: any)
             add(function_calls, outcome['call_id'])
           elseif outcome['type'] == 'message'
             for m in outcome['content']
-              _buffer.AppendMessage(m['text'])
+              _buffer.AppendResponse(m['text'])
             endfor
           endif
         endif
@@ -176,9 +178,7 @@ def HandleJobClose(channel: any, msg: any)
   separator ..= repeat('━', width)
   var response_start = line('$') + 1
 
-  _buffer.AppendMessage(separator)
-  _buffer.AppendMessage(response)
-  _buffer.AddInputSeparator()
+  _buffer.AppendResponse(response)
 
   var wrap_width = width + 2
   var softwrap_lines = 0

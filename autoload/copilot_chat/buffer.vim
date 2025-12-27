@@ -193,6 +193,16 @@ export def AppendMessage(message: any): void
   appendbufline(g:copilot_chat_active_buffer, '$', message)
 enddef
 
+export def AppendResponse(message: string): void
+  var width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
+  var separator = ' '
+  separator ..= repeat('━', width)
+
+  _buffer.AppendMessage(separator)
+  _buffer.AppendMessage(m['text'])
+  _buffer.AddInputSeparator()
+enddef
+
 export def WelcomeMessage(): void
   appendbufline(g:copilot_chat_active_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
   AddInputSeparator()

@@ -103,7 +103,6 @@ export def ApplyPatch(outcome: dict<any>): string
         i += 1
         continue
       endif
-      echom ln
 
       # Match Update
       if ln =~# '^\*\*\* Update File'

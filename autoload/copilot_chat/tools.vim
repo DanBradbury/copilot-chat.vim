@@ -128,7 +128,6 @@ export def InvokeTool(outcome: dict<any>, buffer_messages: list<any>): void
   elseif function_name == 'create_directory'
     agent.CreateDirectory(outcome)
   elseif function_name == 'read_file'
-    echom 'read file call'
     add(buffer_messages, {
       'type': 'function_call_output',
       'call_id': call_id,
