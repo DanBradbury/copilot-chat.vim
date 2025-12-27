@@ -379,7 +379,7 @@ export def CheckForMacro(): void
 
     # Position cursor on the empty line
     cursor(line('.'), 1)
-  elseif current_line =~# '#file: '
+  elseif current_line =~# '#file:'
     if completion_active == 1 && !pumvisible()
       completion_active = 0
     endif
@@ -389,7 +389,7 @@ export def CheckForMacro(): void
       # timer_start(0, {-> execute('let &completeopt = "' . saved_completeopt . '"')})
       set completeopt=menu,menuone,noinsert,noselect
       var line: string = getline('.')
-      var start: number = match(line, '#file: ') + 6
+      var start: number = match(line, '#file:') + 6
       var typed: string = strpart(line, start, col('.') - start - 1)
       if typed !=# '' && filereadable(typed) && !isdirectory(typed)
         return
