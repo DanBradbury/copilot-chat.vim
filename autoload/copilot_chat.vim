@@ -119,5 +119,6 @@ export def SubmitMessage(): void
     endfor
   endfor
 
+  # TODO: use g:copilot_chat_mode to use ask/agent request
   api.AsyncRequest(messages, consolidated_files)
 enddef

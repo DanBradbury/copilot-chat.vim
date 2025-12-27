@@ -23,6 +23,7 @@ g:copilot_chat_jump_to_chat_on_add_selection = get(g:, 'copilot_chat_jump_to_cha
 g:copilot_chat_message_history_limit = get(g:, 'copilot_chat_message_history_limit', 20)
 g:copilot_chat_syntax_debounce_ms = get(g:, 'copilot_chat_syntax_debounce_ms', 300)
 g:copilot_chat_file_cache_timeout = get(g:, 'copilot_chat_file_cache_timeout', 5)
+g:copilot_chat_mode = get(g:, 'copilot_chat_mode', 'Ask')
 
 command! -nargs=0 CopilotChatOpen copilot.OpenChat()
 command! -nargs=1 CopilotChat copilot.StartChat(<q-args>)
@@ -36,6 +37,7 @@ command! -nargs=0 CopilotChatList history.List()
 command! -nargs=0 CopilotChatReset copilot.ResetChat()
 command! -nargs=? CopilotChatSetActive _buffer.SetActive(<q-args>)
 command! -nargs=0 CopilotChatToggle _buffer.ToggleActiveChat()
+command! -nargs=0 CopilotChatSwitchMode _buffer.SwitchMode()
 
 vnoremap <silent> <Plug>CopilotChatAddSelection :<C-u>call copilot_chat#buffer#AddSelection()<CR>
 
