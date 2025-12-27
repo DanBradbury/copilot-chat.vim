@@ -4,8 +4,50 @@ scriptencoding utf-8
 import autoload 'copilot_chat/auth.vim' as auth
 import autoload 'copilot_chat/buffer.vim' as _buffer
 import autoload 'copilot_chat/models.vim' as models
+import autoload 'copilot_chat/tools.vim' as tools
+import autoload 'copilot_chat/debug.vim' as debugger
 
 var curl_output: list<string> = []
+var buffer_messages = []
+var function_calls = []
+
+export def AgentRequest(messages: list<any>): void
+  var chat_token: string = auth.VerifySignin()
+  buffer_messages = messages
+  var url: string = 'https://api.individual.githubcopilot.com/responses'
+  var data: string = json_encode({
+    'model': models.Current(),
+    'stream': true,
+    'tools': tools.List(),
+    'input': messages
+  })
+  debugger.Write('making agent request')
+  debugger.Write(data)
+
+  var tmpfile: string = tempname()
+  writefile([data], tmpfile)
+
+  var curl_cmd: list<string> = [
+    'curl',
+    '-s',
+    '-X',
+    'POST',
+    '-H',
+    'Content-Type: application/json',
+    '-H', 'Authorization: Bearer ' .. chat_token,
+    '-H', 'Editor-Version: vscode/1.80.1',
+    '-d',
+    $'@{tmpfile}',
+    url
+  ]
+
+  var job: job = job_start(curl_cmd, {
+     'out_cb': function('HandleAgentJobOutput'),
+     'exit_cb': function('HandleAgentJobClose'),
+     'err_cb': function('HandleAgentJobError')
+     })
+  _buffer.WaitingForResponse()
+enddef
 
 export def AsyncRequest(messages: list<any>, file_list: list<any>): job
   var chat_token: string = auth.VerifySignin()
@@ -61,6 +103,40 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
   return job
 enddef
 
+def HandleAgentJobOutput(channel: any, msg: any): void
+  if type(msg) == v:t_list
+    for data in msg
+      if data =~? '^data: {'
+        add(curl_output, data)
+      endif
+    endfor
+  else
+    add(curl_output, msg)
+  endif
+enddef
+
+def HandleAgentJobClose(channel: any, msg: any)
+  deletebufline(g:copilot_chat_active_buffer, '$')
+  for line in curl_output
+    if line =~? '^data: {'
+      var json_completion = json_decode(strcharpart(line, 6))
+      if index(keys(json_completion), 'response') != -1 && json_completion['response']['output'] != v:null
+        if len(json_completion['response']['output']) > 0
+          var outcome = json_completion['response']['output'][-1]
+          if outcome['type'] == 'function_call' && index(function_calls, outcome['call_id']) == -1
+            tools.InvokeTool(outcome, buffer_messages)
+            add(function_calls, outcome['call_id'])
+          elseif outcome['type'] == 'message'
+            for m in outcome['content']
+              _buffer.AppendResponse(m['text'])
+            endfor
+          endif
+        endif
+      endif
+    endif
+  endfor
+enddef
+
 def HandleJobOutput(channel: any, msg: any): void
   if type(msg) == v:t_list
     for data in msg
@@ -71,6 +147,10 @@ def HandleJobOutput(channel: any, msg: any): void
   else
     add(curl_output, msg)
   endif
+enddef
+
+def HandleAgentJobError(channel: any, msg: list<any>)
+  echom msg
 enddef
 
 def HandleJobClose(channel: any, msg: any)
@@ -98,9 +178,7 @@ def HandleJobClose(channel: any, msg: any)
   separator ..= repeat('━', width)
   var response_start = line('$') + 1
 
-  _buffer.AppendMessage(separator)
-  _buffer.AppendMessage(response)
-  _buffer.AddInputSeparator()
+  _buffer.AppendResponse(response)
 
   var wrap_width = width + 2
   var softwrap_lines = 0

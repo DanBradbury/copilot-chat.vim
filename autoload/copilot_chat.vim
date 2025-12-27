@@ -18,7 +18,15 @@ enddef
 export def StartChat(message: string): void
   OpenChat()
   _buffer.AppendMessage(message)
-  api.AsyncRequest([{'content': message, 'role': 'user'}], [])
+  #api.AsyncRequest([{'content': message, 'role': 'user'}], [])
+  var user_obj = {
+    "role": "user",
+    'content': [{
+      'type': 'input_text',
+      'text': '<userRequest>\nUpdate the CONTRIBUTING.md file to include more emojis throughout the file. do not delete the existing file\n</userRequest>'
+    }]
+  }
+  api.AgentRequest([user_obj])
 enddef
 
 export def ResetChat(): void
@@ -111,5 +119,6 @@ export def SubmitMessage(): void
     endfor
   endfor
 
+  # TODO: use g:copilot_chat_mode to use ask/agent request
   api.AsyncRequest(messages, consolidated_files)
 enddef

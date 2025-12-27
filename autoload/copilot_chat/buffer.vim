@@ -193,9 +193,34 @@ export def AppendMessage(message: any): void
   appendbufline(g:copilot_chat_active_buffer, '$', message)
 enddef
 
-export def WelcomeMessage(): void
-  appendbufline(g:copilot_chat_active_buffer, 0, 'Welcome to Copilot Chat! Type your message below:')
+export def AppendResponse(message: string): void
+  var width = winwidth(0) - 2 - getwininfo(win_getid())[0].textoff
+  var separator = ' '
+  separator ..= repeat('━', width)
+
+  AppendMessage(separator)
+  AppendMessage(message)
   AddInputSeparator()
+enddef
+
+export def WelcomeMessage(): void
+  var mode = get(g:, 'copilot_chat_mode', 'Ask')
+  appendbufline(g:copilot_chat_active_buffer, 0, $'[{mode}] Welcome to Copilot Chat! Type your message below:')
+  AddInputSeparator()
+enddef
+
+export def SwitchMode(): void
+  if g:copilot_chat_mode == 'Ask'
+    g:copilot_chat_mode = 'Agent'
+  else
+    g:copilot_chat_mode = 'Ask'
+  endif
+
+  if g:copilot_chat_active_buffer == -1 || !bufexists(g:copilot_chat_active_buffer)
+    return
+  endif
+
+  setbufline(g:copilot_chat_active_buffer, 1, $'[{g:copilot_chat_mode}] Welcome to Copilot Chat! Type your message below:')
 enddef
 
 export def SetActive(buf: any): void
