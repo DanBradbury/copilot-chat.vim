@@ -68,10 +68,11 @@ filetype plugin indent on
 ```
 
 ## Setup
-1. Run `:CopilotChatOpen` to open a chat window. You will be prompted to setup your device on first use.
-2. Write your prompt under the line separator and press `<Enter>` in normal mode.
-3. You should see a `Waiting for response..` in the buffer to indicate work is being done in the background.
-4. 🎉🎉🎉
+1. After installing the plugin, the first time you launch vim you'll be presented with the device registration page in your default browser.
+2. Follow the steps on the page and paste the Device Code when prompted.
+3. Once completed press `<Enter>` back in vim to complete the registration process.
+4. Start chatting with Copilot (`:CopilotChatOpen`, `:CopilotChat simple question`, etc)
+5. 🎉🎉🎉
 
 ## Commands
 | Command | Description |
