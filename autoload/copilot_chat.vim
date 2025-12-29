@@ -6,13 +6,12 @@ import autoload 'copilot_chat/buffer.vim' as _buffer
 import autoload 'copilot_chat/api.vim' as api
 
 export def OpenChat(): void
-  if auth.VerifySignin() != v:null
-    if _buffer.HasActiveChat() && g:copilot_reuse_active_chat == 1
-      _buffer.FocusActiveChat()
-    else
-      _buffer.Create()
-    endif
+  if _buffer.HasActiveChat() && g:copilot_reuse_active_chat == 1
+    _buffer.FocusActiveChat()
+  else
+    _buffer.Create()
   endif
+  timer_start(10, (_) => auth.VerifySignin())
 enddef
 
 export def StartChat(message: string): void

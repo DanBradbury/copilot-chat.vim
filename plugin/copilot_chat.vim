@@ -7,6 +7,7 @@ import autoload 'copilot_chat/buffer.vim' as _buffer
 import autoload 'copilot_chat/config.vim' as config
 import autoload 'copilot_chat/history.vim' as history
 import autoload 'copilot_chat/models.vim' as models
+import autoload 'copilot_chat/auth.vim' as auth
 
 if exists('g:loaded_copilot_chat')
   finish
@@ -23,6 +24,11 @@ g:copilot_chat_jump_to_chat_on_add_selection = get(g:, 'copilot_chat_jump_to_cha
 g:copilot_chat_message_history_limit = get(g:, 'copilot_chat_message_history_limit', 20)
 g:copilot_chat_syntax_debounce_ms = get(g:, 'copilot_chat_syntax_debounce_ms', 300)
 g:copilot_chat_file_cache_timeout = get(g:, 'copilot_chat_file_cache_timeout', 5)
+g:copilot_chat_token = ''
+g:copilot_chat_device_token = {}
+g:copilot_chat_available_models = []
+
+timer_start(10, (_) => auth.InitCopilot())
 
 command! -nargs=0 CopilotChatOpen copilot.OpenChat()
 command! -nargs=1 CopilotChat copilot.StartChat(<q-args>)

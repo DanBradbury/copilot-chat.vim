@@ -8,15 +8,14 @@ import autoload 'copilot_chat/config.vim' as config
 g:copilot_popup_selection = 0 # XXX: not sure why this doesnt work as a script var
 var model_key: string = 'model'
 var default_model: string = 'gpt-4o'
-var available_models: list<string> = api.FetchModels(auth.VerifySignin())
 
 export def FilterModels(winid: number, key: string): number
   if key ==? 'j' || key ==? "\<Down>"
-    g:copilot_popup_selection = (g:copilot_popup_selection + 1) % len(available_models)
+    g:copilot_popup_selection = (g:copilot_popup_selection + 1) % len(g:copilot_chat_available_models)
   elseif key ==? 'k' || key ==? "\<Up>"
-    g:copilot_popup_selection = (g:copilot_popup_selection - 1 + len(available_models)) % len(available_models)
+    g:copilot_popup_selection = (g:copilot_popup_selection - 1 + len(g:copilot_chat_available_models)) % len(g:copilot_chat_available_models)
   elseif key ==? "\<CR>" || key ==? "\<Space>"
-    var selected_model: string = available_models[g:copilot_popup_selection]
+    var selected_model: string = g:copilot_chat_available_models[g:copilot_popup_selection]
     config.SetValue(model_key, selected_model)
     echo selected_model .. ' set as active model'
     popup_close(winid)
@@ -26,8 +25,8 @@ export def FilterModels(winid: number, key: string): number
     return 1
   endif
 
-  var display_items: list<string> = copy(available_models)
-  var active_model_index = index(available_models, Current())
+  var display_items: list<string> = copy(g:copilot_chat_available_models)
+  var active_model_index = index(g:copilot_chat_available_models, Current())
   display_items[active_model_index] = '* ' .. display_items[active_model_index]
   display_items[g:copilot_popup_selection] = '> ' .. display_items[g:copilot_popup_selection]
 
@@ -42,12 +41,12 @@ export def FilterModels(winid: number, key: string): number
 enddef
 
 export def Select(): void
-  g:copilot_popup_selection = index(available_models, Current())
+  g:copilot_popup_selection = index(g:copilot_chat_available_models, Current())
   if g:copilot_popup_selection ==? -1
     g:copilot_popup_selection = 0
   endif
 
-  var display_items = copy(available_models)
+  var display_items = copy(g:copilot_chat_available_models)
   display_items[g:copilot_popup_selection] = '> ' .. display_items[g:copilot_popup_selection]
 
   execute 'syntax match SelectedText  /^ > .*/'

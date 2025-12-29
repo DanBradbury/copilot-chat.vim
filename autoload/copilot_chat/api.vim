@@ -8,7 +8,6 @@ import autoload 'copilot_chat/models.vim' as models
 var curl_output: list<string> = []
 
 export def AsyncRequest(messages: list<any>, file_list: list<any>): job
-  var chat_token: string = auth.VerifySignin()
   curl_output = []
   var url: string = 'https://api.githubcopilot.com/chat/completions'
 
@@ -43,7 +42,7 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
     'POST',
     '-H',
     'Content-Type: application/json',
-    '-H', 'Authorization: Bearer ' .. chat_token,
+    '-H', 'Authorization: Bearer ' .. g:copilot_chat_token,
     '-H', 'Editor-Version: vscode/1.107.0',
     '-H', 'Editor-Plugin-Version: copilot-chat/0.36.2025121601',
     '-d',
@@ -134,9 +133,9 @@ def HandleJobError(channel: any, msg: list<any>)
   endif
 enddef
 
-export def FetchModels(chat_token: string): list<string>
+export def FetchModels(chat_token: string)
   if exists('g:copilot_chat_test_mode')
-    return ['gpt-o4']
+    return
   endif
 
   var chat_headers = [
@@ -145,53 +144,62 @@ export def FetchModels(chat_token: string): list<string>
     'Editor-Plugin-Version: copilot-chat/0.36.2025121601'
   ]
 
-  var response = Http('GET', 'https://api.githubcopilot.com/models', chat_headers, {})
-  var model_list = []
-  var json_response = json_decode(response)
-  for item in json_response.data
-    if has_key(item, 'id')
-      add(model_list, item.id)
-    endif
-  endfor
-  return model_list
+  var command = HttpCommand('GET', 'https://api.githubcopilot.com/models', chat_headers, {})
+  job_start(command, {'err_cb': function('HandleFetchModelsError'), 'out_cb': function('HandleFetchModelsOut')})
 enddef
 
-export def Http(method: string, url: string, headers: list<any>, body: any): string
-  var response = ''
+def HandleFetchModelsOut(channel: any, msg: any)
+  var model_list = []
+  try
+    var json_response = json_decode(msg)
+    for item in json_response.data
+      if has_key(item, 'id')
+        add(model_list, item.id)
+      endif
+    endfor
+    g:copilot_chat_available_models = model_list
+  catch
+    # not valid json yet.. waiting
+  endtry
+enddef
+
+# if this errors out we should get a new token
+def HandleFetchModelsError(channel: any, msg: any)
+  auth.GetTokens(true)
+enddef
+
+export def HttpCommand(method: string, url: string, headers: list<any>, body: any): string
+  var command = ''
+
   if has('win32')
-    var ps_cmd = 'powershell -Command "'
-    ps_cmd ..= '$headers = @{'
+    command ..= 'powershell -Command "'
+    command ..= '$headers = @{'
     for header in headers
       var parts = split(header, ': ')
       var key = parts[0]
       var value = parts[1]
-      ps_cmd ..= "'" .. key .. "'='" .. value .. "';"
+      command ..= "'" .. key .. "'='" .. value .. "';"
     endfor
-    ps_cmd ..= '};'
+    command ..= '};'
     if method !=# 'GET'
-      ps_cmd ..= '$body = ConvertTo-Json @{'
+      command ..= '$body = ConvertTo-Json @{'
       for obj in keys(body)
-        ps_cmd ..= obj .. "='" .. body[obj] .. "';"
+        command ..= obj .. "='" .. body[obj] .. "';"
       endfor
-      ps_cmd ..= '};'
+      command ..= '};'
     endif
-    ps_cmd ..= "Invoke-WebRequest -Uri '" .. url .. "' -Method " .. method .. " -Headers $headers -Body $body -ContentType 'application/json' -UseBasicParsing | Select-Object -ExpandProperty Content"
-    ps_cmd ..= '"'
-    response = system(ps_cmd)
+    command ..= "Invoke-WebRequest -Uri '" .. url .. "' -Method " .. method .. " -Headers $headers -Body $body -ContentType 'application/json' -UseBasicParsing | Select-Object -ExpandProperty Content"
+    command ..= '"'
   else
     var token_data = json_encode(body)
 
-    var curl_cmd = 'curl -s -X ' .. method .. ' --compressed '
+    command ..= 'curl -s -X ' .. method .. ' --compressed '
     for header in headers
-      curl_cmd ..= '-H "' .. header .. '" '
+      command ..= '-H "' .. header .. '" '
     endfor
-    curl_cmd ..= "-d '" .. token_data .. "' " .. url
-
-    response = system(curl_cmd)
-    if v:shell_error != 0
-      echom 'Error: ' .. v:shell_error
-      return ''
-    endif
+    command ..= "-d '" .. token_data .. "' " .. url
   endif
-  return response
+
+  return command
 enddef
+
