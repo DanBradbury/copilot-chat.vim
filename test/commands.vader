@@ -2,6 +2,7 @@ Execute:
   call delete(g:copilot_chat_data_dir . '/history', 'rf')
 
   let g:copilot_chat_test_mode = 1
+  let g:copilot_chat_available_models = ['gpt4']
   let pos = getpos('.')
   AssertEqual pos[1], 1
   AssertEqual pos[2], 1
