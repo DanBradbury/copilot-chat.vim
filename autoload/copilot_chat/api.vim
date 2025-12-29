@@ -172,7 +172,6 @@ def HandleFetchModelsError(channel: any, msg: any)
 enddef
 
 export def HttpCommand(method: string, url: string, headers: list<any>, body: any): any
-
   if has('win32')
     var command = ''
     command ..= 'powershell -Command "'
