@@ -160,6 +160,9 @@ def HandleFetchModelsOut(channel: any, msg: any)
     g:copilot_chat_available_models = model_list
   catch
     # not valid json yet.. waiting
+    if stridx(msg, 'token expired') != -1
+      auth.GetTokens(true)
+    endif
   endtry
 enddef
 
@@ -168,10 +171,10 @@ def HandleFetchModelsError(channel: any, msg: any)
   auth.GetTokens(true)
 enddef
 
-export def HttpCommand(method: string, url: string, headers: list<any>, body: any): string
-  var command = ''
+export def HttpCommand(method: string, url: string, headers: list<any>, body: any): any
 
   if has('win32')
+    var command = ''
     command ..= 'powershell -Command "'
     command ..= '$headers = @{'
     for header in headers
@@ -190,16 +193,21 @@ export def HttpCommand(method: string, url: string, headers: list<any>, body: an
     endif
     command ..= "Invoke-WebRequest -Uri '" .. url .. "' -Method " .. method .. " -Headers $headers -Body $body -ContentType 'application/json' -UseBasicParsing | Select-Object -ExpandProperty Content"
     command ..= '"'
+    return command
   else
-    var token_data = json_encode(body)
-
-    command ..= 'curl -s -X ' .. method .. ' --compressed '
+    var command = ['curl', '-s', '-X', method, '--compressed']
     for header in headers
-      command ..= '-H "' .. header .. '" '
+      command->add('-H')
+      command->add(header)
     endfor
-    command ..= "-d '" .. token_data .. "' " .. url
+
+    if method !=# 'GET'
+      var token_data = json_encode(body)
+      command->add('-d')
+      command->add(token_data)
+    endif
+    command->add(url)
+
+    return command
   endif
-
-  return command
 enddef
-

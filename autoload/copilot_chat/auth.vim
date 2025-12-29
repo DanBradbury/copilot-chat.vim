@@ -51,12 +51,16 @@ def GetAccessToken(bearer_token: string)
     'client_id': 'Iv1.b507a08c87ecfe98',
     'scope': 'read:user'
   }
+  var output = []
   var command = api.HttpCommand('GET', token_url, token_headers, token_data)
-  job_start(command, {'out_cb': function('HandleGetToken')})
+  job_start(command, {
+    'out_cb': (channel, msg) => output->add(msg),
+    'exit_cb': (job, status) => HandleGetTokenExit(output, status)
+  })
 enddef
 
-def HandleGetToken(channel: any, response: any)
-  var json_response = json_decode(response)
+def HandleGetTokenExit(lines: list<string>, status: number)
+  var json_response = json_decode(join(lines, ''))
   var chat_token = json_response.token
   writefile([chat_token], chat_token_file)
   g:copilot_chat_token = chat_token
