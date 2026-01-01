@@ -133,42 +133,39 @@ def HandleJobError(channel: any, msg: list<any>)
   endif
 enddef
 
-export def FetchModels(chat_token: string)
+export def FetchModels()
   if exists('g:copilot_chat_test_mode')
     return
   endif
 
   var chat_headers = [
-    $'Authorization: Bearer {chat_token}',
+    $'Authorization: Bearer {g:copilot_chat_token}',
     'Editor-Version: vscode/1.107.0',
     'Editor-Plugin-Version: copilot-chat/0.36.2025121601'
   ]
 
   var command = HttpCommand('GET', 'https://api.githubcopilot.com/models', chat_headers, {})
-  job_start(command, {'err_cb': function('HandleFetchModelsError'), 'out_cb': function('HandleFetchModelsOut')})
+  var output = []
+  job_start(command, {
+    'out_cb': (channel, msg) => output->add(msg),
+    'exit_cb': (job, status) => HandleFetchModelsExit(output, status)
+  })
 enddef
 
-def HandleFetchModelsOut(channel: any, msg: any)
-  var model_list = []
-  try
-    var json_response = json_decode(msg)
+def HandleFetchModelsExit(output: list<string>, status: number)
+  if status == 0
+    var response = join(output, '')
+    var model_list = []
+    var json_response = json_decode(response)
     for item in json_response.data
       if has_key(item, 'id')
         add(model_list, item.id)
       endif
     endfor
     g:copilot_chat_available_models = model_list
-  catch
-    # not valid json yet.. waiting
-    if stridx(msg, 'token expired') != -1
-      auth.GetTokens(true)
-    endif
-  endtry
-enddef
-
-# if this errors out we should get a new token
-def HandleFetchModelsError(channel: any, msg: any)
-  auth.GetTokens(true)
+  else
+    auth.GetTokens()
+  endif
 enddef
 
 export def HttpCommand(method: string, url: string, headers: list<any>, body: any): any

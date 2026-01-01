@@ -43,6 +43,7 @@ export def ResetChat(): void
 enddef
 
 export def SubmitMessage(): void
+  auth.GetTokens()
   var messages = []
   var pattern = ' ━\+$'
   var all_file_lists = []

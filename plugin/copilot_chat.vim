@@ -28,7 +28,7 @@ g:copilot_chat_token = ''
 g:copilot_chat_device_token = {}
 g:copilot_chat_available_models = []
 
-timer_start(10, (_) => auth.InitCopilot())
+auth.VerifySignin()
 
 command! -nargs=0 CopilotChatOpen copilot.OpenChat()
 command! -nargs=1 CopilotChat copilot.StartChat(<q-args>)

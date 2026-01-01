@@ -10,18 +10,27 @@ export def VerifySignin(): void
   if exists('g:copilot_chat_test_mode')
     return
   endif
-  GetTokens(false)
+
+  GetTokens()
 enddef
 
-export def GetTokens(fetch_new: bool)
-  if filereadable(chat_token_file) && !fetch_new
+def TokenHasExpired(chat_token: string): bool
+  var expiry_epoch = split(split(chat_token, ';')[1], '=')[1]
+  return localtime() > str2nr(expiry_epoch)
+enddef
+
+export def GetTokens()
+  if filereadable(chat_token_file)
     g:copilot_chat_token = join(readfile(chat_token_file), "\n")
-    api.FetchModels(g:copilot_chat_token)
+    if TokenHasExpired(g:copilot_chat_token)
+      GetAccessToken()
+    else
+      api.FetchModels()
+    endif
   else
     config.CreateDataDir()
     if filereadable(device_token_file)
-      var bearer_token = join(readfile(device_token_file), "\n")
-      GetAccessToken(bearer_token)
+      GetAccessToken()
     else
       var token_url = 'https://github.com/login/device/code'
       var headers = [
@@ -39,7 +48,8 @@ export def GetTokens(fetch_new: bool)
   endif
 enddef
 
-def GetAccessToken(bearer_token: string)
+def GetAccessToken()
+  var bearer_token = join(readfile(device_token_file), "\n")
   var token_url = 'https://api.github.com/copilot_internal/v2/token'
   var token_headers = [
     'Accept: application/json',
@@ -60,11 +70,13 @@ def GetAccessToken(bearer_token: string)
 enddef
 
 def HandleGetTokenExit(lines: list<string>, status: number)
-  var json_response = json_decode(join(lines, ''))
-  var chat_token = json_response.token
-  writefile([chat_token], chat_token_file)
-  g:copilot_chat_token = chat_token
-  api.FetchModels(chat_token)
+  if status == 0
+    var json_response = json_decode(join(lines, ''))
+    var chat_token = json_response.token
+    writefile([chat_token], chat_token_file)
+    g:copilot_chat_token = chat_token
+    api.FetchModels()
+  endif
 enddef
 
 def HandleDeviceToken(channel: any, response: any)
@@ -98,7 +110,7 @@ def HandleAccessToken(channel: any, response: string)
   var token = json_response.access_token
   writefile([token], device_token_file)
   echom 'Copilot Chat Device Registration Successful!'
-  GetAccessToken(token)
+  GetAccessToken()
 enddef
 
 def OpenUrl(url: string)
@@ -126,8 +138,4 @@ def CopyToClipboard(text: string)
       echoerr 'Clipboard not available'
     endif
   endif
-enddef
-
-export def InitCopilot()
-  VerifySignin()
 enddef
