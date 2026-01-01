@@ -1,95 +1,141 @@
-let s:device_token_file = g:copilot_chat_data_dir .  '/.device_token'
-let s:chat_token_file = g:copilot_chat_data_dir . '/.chat_token'
+vim9script
 
-function! copilot_chat#auth#verify_signin() abort
-  let l:chat_token = copilot_chat#auth#get_chat_token(v:false)
-  try
-    call copilot_chat#api#fetch_models(l:chat_token)
-  catch
-    let l:chat_token = copilot_chat#auth#get_chat_token(v:true)
-  endtry
-  return l:chat_token
-endfunction
+import autoload 'copilot_chat/api.vim' as api
+import autoload 'copilot_chat/config.vim' as config
 
-function! copilot_chat#auth#get_chat_token(fetch_new) abort
-  if filereadable(s:chat_token_file) && a:fetch_new == v:false
-    return join(readfile(s:chat_token_file), "\n")
-  else
-    "call copilot_chat#api#get_token()
-    call copilot_chat#config#create_data_dir()
-    let l:bearer_token = copilot_chat#auth#get_bearer_token()
-    let l:token_url = 'https://api.github.com/copilot_internal/v2/token'
-    let l:token_headers = [
-      \ 'Accept: application/json',
-      \ 'Accept-Encoding: gzip,deflate,br',
-      \ 'Content-Type: application/json',
-      \ 'Authorization: token ' . l:bearer_token,
-      \ ]
-    let l:token_data = {
-      \ 'client_id': 'Iv1.b507a08c87ecfe98',
-      \ 'scope': 'read:user'
-      \ }
-    let l:response = copilot_chat#http('GET', l:token_url, l:token_headers, l:token_data)
-    let l:json_response = json_decode(l:response)
-    try
-      let l:chat_token = l:json_response.token
-      call writefile([l:chat_token], s:chat_token_file)
-    catch
-      echom l:json_response.message
-      return v:null
-    endtry
+var device_token_file: string = $'{g:copilot_chat_data_dir}/.device_token'
+var chat_token_file: string = $'{g:copilot_chat_data_dir}/.chat_token'
 
-    return l:chat_token
+export def VerifySignin(): void
+  if exists('g:copilot_chat_test_mode')
+    return
   endif
-endfunction
 
-function! copilot_chat#auth#get_bearer_token() abort
-  if filereadable(s:device_token_file)
-    return join(readfile(s:device_token_file), "\n")
+  GetTokens()
+enddef
+
+def TokenHasExpired(chat_token: string): bool
+  var expiry_epoch = split(split(chat_token, ';')[1], '=')[1]
+  return localtime() > str2nr(expiry_epoch)
+enddef
+
+export def GetTokens()
+  if filereadable(chat_token_file)
+    g:copilot_chat_token = join(readfile(chat_token_file), "\n")
+    if TokenHasExpired(g:copilot_chat_token)
+      GetAccessToken()
+    else
+      api.FetchModels()
+    endif
   else
-    let l:response = copilot_chat#auth#get_device_token()
-    let l:json_response = json_decode(l:response)
-    let l:device_code = l:json_response.device_code
-    let l:user_code = l:json_response.user_code
-    let l:verification_uri = l:json_response.verification_uri
-
-    echo 'Please visit ' . l:verification_uri . ' and enter the code: ' . l:user_code
-    call input("Press Enter to continue...\n")
-
-    let l:token_poll_url = 'https://github.com/login/oauth/access_token'
-    let l:token_poll_data = {
-      \ 'client_id': 'Iv1.b507a08c87ecfe98',
-      \ 'device_code': l:device_code,
-      \ 'grant_type': 'urn:ietf:params:oauth:grant-type:device_code'
-      \ }
-      let l:token_headers = [
-        \ 'Accept: application/json',
-        \ 'Accept-Encoding: gzip,deflate,br',
-        \ 'Content-Type: application/json',
-        \ ]
-
-    let l:access_token_response = copilot_chat#http('POST', l:token_poll_url, l:token_headers, l:token_poll_data)
-    let l:json_response = json_decode(l:access_token_response)
-    let l:bearer_token = l:json_response.access_token
-    call writefile([l:bearer_token], s:device_token_file)
-
-    return l:bearer_token
+    config.CreateDataDir()
+    if filereadable(device_token_file)
+      GetAccessToken()
+    else
+      var token_url = 'https://github.com/login/device/code'
+      var headers = [
+        'Accept: application/json',
+        'Accept-Encoding: gzip, deflate, br',
+        'Content-Type: application/json',
+      ]
+      var data = {
+        'client_id': 'Iv1.b507a08c87ecfe98',
+        'scope': 'read: user'
+      }
+      var command = api.HttpCommand('POST', token_url, headers, data)
+      job_start(command, {'out_cb': function('HandleDeviceToken')})
+    endif
   endif
-endfunction
+enddef
 
-function! copilot_chat#auth#get_device_token() abort
-  let l:token_url = 'https://github.com/login/device/code'
-  let l:headers = [
-    \ 'Accept: application/json',
-    \ 'Accept-Encoding: gzip,deflate,br',
-    \ 'Content-Type: application/json',
-    \ ]
-  let l:data = {
-    \ 'client_id': 'Iv1.b507a08c87ecfe98',
-    \ 'scope': 'read:user'
-    \ }
+def GetAccessToken()
+  var bearer_token = join(readfile(device_token_file), "\n")
+  var token_url = 'https://api.github.com/copilot_internal/v2/token'
+  var token_headers = [
+    'Accept: application/json',
+    'Accept-Encoding: gzip,deflate,br',
+    'Content-Type: application/json',
+    $'Authorization: token {bearer_token}'
+  ]
+  var token_data = {
+    'client_id': 'Iv1.b507a08c87ecfe98',
+    'scope': 'read:user'
+  }
+  var output = []
+  var command = api.HttpCommand('GET', token_url, token_headers, token_data)
+  job_start(command, {
+    'out_cb': (channel, msg) => output->add(msg),
+    'exit_cb': (job, status) => HandleGetTokenExit(output, status)
+  })
+enddef
 
-  return copilot_chat#http('POST', l:token_url, l:headers, l:data)
-endfunction
+def HandleGetTokenExit(lines: list<string>, status: number)
+  if status == 0
+    var json_response = json_decode(join(lines, ''))
+    var chat_token = json_response.token
+    writefile([chat_token], chat_token_file)
+    g:copilot_chat_token = chat_token
+    api.FetchModels()
+  endif
+enddef
 
-" vim:set ft=vim sw=2 sts=2 et:
+def HandleDeviceToken(channel: any, response: any)
+  var json_response = json_decode(response)
+  var device_code = json_response.device_code
+  var user_code = json_response.user_code
+  var verification_uri = json_response.verification_uri
+
+  CopyToClipboard(user_code)
+  OpenUrl(verification_uri)
+  input($"Please go to {verification_uri} and paste the code (added to your clipboard already): {user_code}\nPress Enter to continue when completed...\n")
+
+  var token_poll_url = 'https://github.com/login/oauth/access_token'
+  var token_poll_data = {
+    'client_id': 'Iv1.b507a08c87ecfe98',
+    'device_code': device_code,
+    'grant_type': 'urn:ietf:params:oauth:grant-type:device_code'
+  }
+  var token_headers = [
+    'Accept: application/json',
+    'Accept-Encoding: gzip,deflate,br',
+    'Content-Type: application/json'
+  ]
+
+  var access_token_command = api.HttpCommand('POST', token_poll_url, token_headers, token_poll_data)
+  job_start(access_token_command, {'out_cb': function('HandleAccessToken')})
+enddef
+
+def HandleAccessToken(channel: any, response: string)
+  var json_response = json_decode(response)
+  var token = json_response.access_token
+  writefile([token], device_token_file)
+  echom 'Copilot Chat Device Registration Successful!'
+  GetAccessToken()
+enddef
+
+def OpenUrl(url: string)
+  if has('mac') || has('macunix')
+    execute '!open ' .. url
+  elseif has('win32') || has('win64')
+    execute '!start ' .. url
+  elseif has('unix')
+    execute '!xdg-open ' .. url
+  endif
+enddef
+
+def CopyToClipboard(text: string)
+  if has('clipboard')
+    @+ = text
+    @* = text
+  else
+    if has('mac') || has('macunix')
+      system('pbcopy', text)
+    elseif has('unix')
+      system('xclip -selection clipboard', text)
+    elseif has('win32') || has('win64')
+      system('clip.exe', text)
+    else
+      echoerr 'Clipboard not available'
+    endif
+  endif
+enddef

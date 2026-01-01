@@ -1,39 +1,37 @@
+vim9script
 scriptencoding utf-8
 
-" Generic configuration functionality
-" -----------------------------------
-let s:chat_config_file = g:copilot_chat_data_dir . '/config.json'
+# Generic configuration functionality
+# -----------------------------------
+var chat_config_file: string = g:copilot_chat_data_dir .. '/config.json'
 
-" Read the config file on load
-if filereadable(s:chat_config_file)
-  let s:config_raw_data = join(readfile(s:chat_config_file), "\n")
-  let s:config = json_decode(s:config_raw_data)
-else
-  let s:config = {}
+# Read the config file on load
+var config: dict<any> = {}
+if filereadable(chat_config_file)
+  var config_raw_data: string = join(readfile(chat_config_file), "\n")
+  config = json_decode(config_raw_data)
 endif
 
-function! copilot_chat#config#create_data_dir() abort
+export def CreateDataDir(): void
   if !isdirectory(g:copilot_chat_data_dir)
-    call mkdir(g:copilot_chat_data_dir, 'p')
+    mkdir(g:copilot_chat_data_dir, 'p')
   endif
-endfunction
+enddef
 
-function! copilot_chat#config#save_config_file() abort
-  call copilot_chat#config#create_data_dir()
-  call writefile([json_encode(s:config)], s:chat_config_file)
-endfunction
+def SaveConfigFile(): void
+  CreateDataDir()
+  writefile([json_encode(config)], chat_config_file)
+enddef
 
-function! copilot_chat#config#get_value(key, default) abort
-  return get(s:config, a:key, a:default)
-endfunction
+export def GetValue(key: string, default: any): any
+  return get(config, key, default)
+enddef
 
-function! copilot_chat#config#set_value(key, value) abort
-  let s:config[a:key] = a:value
-  call copilot_chat#config#save_config_file()
-endfunction
+export def SetValue(key: string, value: any): void
+  config[key] = value
+  SaveConfigFile()
+enddef
 
-function! copilot_chat#config#view() abort
-  execute 'vsplit ' . s:chat_config_file
-endfunction
-
-" vim:set ft=vim sw=2 sts=2 et:
+export def View(): void
+  execute 'vsplit ' .. chat_config_file
+enddef

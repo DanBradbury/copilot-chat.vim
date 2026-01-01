@@ -1,6 +1,19 @@
 Execute:
-  source ./test/mocks/init.vim
-  call copilot_chat#start_chat("which model am i talking to?")
+  call delete(g:copilot_chat_data_dir . '/history', 'rf')
+
+  let g:copilot_chat_test_mode = 1
+  let g:copilot_chat_available_models = ['gpt4']
+  let pos = getpos('.')
+  AssertEqual pos[1], 1
+  AssertEqual pos[2], 1
+
+  execute 'CopilotChatList'
+  let messages = execute('messages')
+  let lines = messages->split('\n')
+  AssertEqual lines[-1], 'No saved chat histories'
+
+  execute 'CopilotChat which model am i talking to?'
+  AssertEqual bufname('%'), 'CopilotChat-1'
   AssertEqual SyntaxAt(1,1), 'CopilotWelcome'
   AssertEqual SyntaxAt(2,1), ''
   AssertEqual SyntaxAt(3,1), 'CopilotSeparatorIcon'
@@ -10,3 +23,45 @@ Execute:
   AssertEqual getline(5), 'which model am i talking to?'
   AssertEqual SyntaxAt(6,1), 'CopilotWaiting'
   AssertEqual getline('$'), 'Waiting for response'
+
+  execute 'CopilotChatSave magical-magic'
+  execute 'CopilotChatList'
+  let messages = execute('messages')
+  let lines = messages->split('\n')
+  AssertEqual lines[-1], '- magical-magic'
+
+  execute 'CopilotChatConfig'
+  Assert bufname('%') =~ 'copilot-chat/config.json'
+
+  execute 'CopilotChatToggle'
+  AssertEqual bufname('%'), 'CopilotChat-1'
+
+  execute 'CopilotChatReset'
+  AssertEqual SyntaxAt(6,1), ''
+  let reset_buffer = bufnr()
+
+  let pre_popups = popup_list()
+  execute 'CopilotChatModels'
+  AssertEqual len(popup_list()), len(pre_popups) + 1
+  call feedkeys('q', 'x')
+  AssertEqual len(popup_list()), len(pre_popups)
+
+  execute 'CopilotChatLoad magical-magic'
+  AssertEqual getline(5), 'which model am i talking to?'
+  AssertEqual bufname('%'), 'CopilotChat-2'
+
+  execute 'CopilotChatOpen'
+  AssertEqual bufname('%'), 'CopilotChat-3'
+  normal Giheyo
+  AssertEqual getline(4), 'heyo'
+  execute 'CopilotChatSubmit'
+  AssertEqual SyntaxAt(5,1), 'CopilotWaiting'
+
+  execute 'buffer ' .. reset_buffer
+  AssertEqual bufname('%'), 'CopilotChat-1'
+  normal Gileon
+  execute 'CopilotChatSetActive'
+  execute 'CopilotChatSubmit'
+  AssertEqual getline(4), 'leon'
+  AssertEqual SyntaxAt(5,1), 'CopilotWaiting'
+

@@ -1,6 +1,6 @@
 Execute:
-  source ./test/mocks/copilot_chat/auth.vim
-  call copilot_chat#open_chat()
+  let g:copilot_chat_test_mode = 1
+  exec 'CopilotChatOpen'
   AssertEqual SyntaxAt(1,1), 'CopilotWelcome'
   AssertEqual SyntaxAt(2,1), ''
   AssertEqual SyntaxAt(3,1), 'CopilotSeparatorIcon'

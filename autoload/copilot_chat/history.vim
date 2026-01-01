@@ -1,141 +1,137 @@
+vim9script
 scriptencoding utf-8
 
-let s:history_dir = expand('~/.vim/copilot-chat/history', 1)
+import autoload 'copilot_chat.vim' as base
+import autoload 'copilot_chat/buffer.vim' as _buffer
 
-function! copilot_chat#history#save(name) abort
-  if !isdirectory(s:history_dir)
-    call mkdir(s:history_dir, 'p')
+var history_dir: string = expand('~/.vim/copilot-chat/history', 1)
+
+export def Save(name: string): string
+  if !isdirectory(history_dir)
+    mkdir(history_dir, 'p')
   endif
 
-  " Default to current date/time if no name provided
-  let l:filename = empty(a:name) ? strftime('%Y%m%d_%H%M%S') : a:name
-  let l:history_file = s:history_dir . '/' . l:filename . '.json'
+  # Default to current date/time if no name provided
+  var filename: string = empty(name) ? strftime('%Y%m%d_%H%M%S') : name
+  var history_file = history_dir .. '/' .. filename .. '.json'
 
-  " Get chat content
-  let l:chat_content = []
-  let l:in_user_message = 0
-  let l:in_assistant_message = 0
-  let l:current_message = {'role': '', 'content': ''}
+  # Get chat content
+  var chat_content: list<dict<any>> = []
+  var in_user_message: number = 0
+  var in_assistant_message: number = 0
+  var current_message: dict<any> = {'role': '', 'content': ''}
 
   for line in getbufline(g:copilot_chat_active_buffer, 1, '$')
-    " Skip welcome message and waiting lines
+    # Skip welcome message and waiting lines
     if line =~? '^Welcome to Copilot Chat' || line =~? '^Waiting for response'
       continue
     endif
 
-    " Detect separator lines
+    # Detect separator lines
     if line =~? ' ━\+$'
-      if !empty(l:current_message.content) && !empty(l:current_message.role)
-        call add(l:chat_content, l:current_message)
-        let l:current_message = {'role': '', 'content': ''}
+      if !empty(current_message.content) && !empty(current_message.role)
+        add(chat_content, current_message)
+        current_message = {'role': '', 'content': ''}
       endif
 
-      " Toggle between user and assistant messages
-      if l:in_user_message
-        let l:in_user_message = 0
-        let l:in_assistant_message = 1
-        let l:current_message.role = 'assistant'
+      # Toggle between user and assistant messages
+      if in_user_message
+        in_user_message = 0
+        in_assistant_message = 1
+        current_message.role = 'assistant'
       else
-        let l:in_user_message = 1
-        let l:in_assistant_message = 0
-        let l:current_message.role = 'user'
+        in_user_message = 1
+        in_assistant_message = 0
+        current_message.role = 'user'
       endif
       continue
     endif
 
-    " Add content to current message if we're in a message
-    if l:in_user_message || l:in_assistant_message
-      " Skip empty lines at the start of messages
-      if empty(l:current_message.content) && empty(line)
+    # Add content to current message if we're in a message
+    if in_user_message || in_assistant_message
+      # Skip empty lines at the start of messages
+      if empty(current_message.content) && empty(line)
         continue
       endif
-      let l:current_message.content .= (empty(l:current_message.content) ? '' : "\n") . line
+      current_message.content ..= (empty(current_message.content) ? '' : "\n") .. line
     endif
   endfor
 
-  " Add the last message if it exists
-  if !empty(l:current_message.content) && !empty(l:current_message.role)
-    call add(l:chat_content, l:current_message)
+  # Add the last message if it exists
+  if !empty(current_message.content) && !empty(current_message.role)
+    add(chat_content, current_message)
   endif
 
-  " Save as JSON file
-  call writefile([json_encode(l:chat_content)], l:history_file)
-  echo 'Chat history saved to ' . l:history_file
-  return l:filename
-endfunction
+  # Save as JSON file
+  writefile([json_encode(chat_content)], history_file)
+  echo 'Chat history saved to ' .. history_file
+  return filename
+enddef
 
-function! copilot_chat#history#load(name) abort
-  if !isdirectory(s:history_dir)
-    call mkdir(s:history_dir, 'p')
+export def Load(name: string): number
+  if !isdirectory(history_dir)
+    mkdir(history_dir, 'p')
     echo 'No chat history found'
     return 0
   endif
 
-  " If no name provided, show available histories
-  if empty(a:name)
-    call copilot_chat#history#list()
+  if empty(name)
+    List()
     return 0
   endif
 
-  let l:history_file = s:history_dir . '/' . a:name . '.json'
+  var history_file = history_dir .. '/' .. name .. '.json'
 
-  if !filereadable(l:history_file)
-    echo 'Chat history "' . a:name . '" not found'
+  if !filereadable(history_file)
+    echo 'Chat history "' .. name .. '" not found'
     return 0
   endif
 
-  " Load the history file
-  let l:chat_content = json_decode(join(readfile(l:history_file), "\n"))
+  var chat_content: list<dict<any>> = json_decode(join(readfile(history_file), "\n"))
 
-  " Create a new chat buffer
-  call copilot_chat#open_chat()
+  base.OpenChat()
 
-  " Add all messages to the buffer
-  let l:first_message = 1
-  for message in l:chat_content
-    if l:first_message
-      let l:first_message = 0
+  var first_message: bool = true
+  for message in chat_content
+    if first_message
+      first_message = false
     else
-      let l:width = winwidth(0) - 2
-      let l:separator = ' ' . repeat('━', l:width)
-      call appendbufline(g:copilot_chat_active_buffer, '$', l:separator)
+      var width: number = winwidth(0) - 2
+      var separator: string = ' ' .. repeat('━', width)
+      appendbufline(g:copilot_chat_active_buffer, '$', separator)
     endif
 
-    call appendbufline(g:copilot_chat_active_buffer, '$', split(message.content, "\n"))
+    appendbufline(g:copilot_chat_active_buffer, '$', split(message.content, "\n"))
   endfor
 
-  " Add final separator for new input
-  call copilot_chat#buffer#add_input_separator()
-  echo 'Loaded chat history: ' . a:name
-  normal! G
+  _buffer.AddInputSeparator()
   return 1
-endfunction
+enddef
 
-function! copilot_chat#history#get() abort
-  if !isdirectory(s:history_dir)
-    call mkdir(s:history_dir, 'p')
+export def Get(): list<string>
+  if !isdirectory(history_dir)
+    mkdir(history_dir, 'p')
     return []
   endif
 
-  return map(glob(s:history_dir . '/*.json', 0, 1), {-> fnamemodify(v:val, ':t:r')})
-endfunction
+  return map(glob(history_dir .. '/*.json', 0, 1), 'fnamemodify(v:val, ":t:r")')
+enddef
 
-function! copilot_chat#history#complete(A, L, P) abort
-  return matchfuzzy(copilot_chat#history#get(), a:A)
-endfunction
+export def Complete(arg_lead: string, cmd_line: any, cursor_pos: number): list<string>
+  #return matchfuzzy(Get(), arg_lead)
+  return matchfuzzy(copilot_chat#history#get(), arg_lead)
+enddef
 
-function! copilot_chat#history#list() abort
-  let l:histories = copilot_chat#history#get()
+export def List(): void
+  var histories = Get()
 
-  if empty(l:histories)
-    echo 'No saved chat histories'
+  if empty(histories)
+    echom 'No saved chat histories'
     return
   endif
 
-  echo 'Available chat histories:'
-  for history in l:histories
-    echo '- ' . history
+  echo 'Available chat historie '
+  for history in histories
+    echom '- ' .. history
   endfor
-endfunction
-
-" vim:set ft=vim sw=2 sts=2 et:
+enddef

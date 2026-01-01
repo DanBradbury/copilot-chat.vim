@@ -1,0 +1,21 @@
+name: Lint
+on:
+  #push:
+    #branches: [main]
+  #pull_request:
+    #branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+      - name: lint
+        run: |
+          gem install vinter
+          vinter . --exclude=test/
