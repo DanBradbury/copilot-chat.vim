@@ -14,17 +14,29 @@ export def VerifySignin(): void
   GetTokens()
 enddef
 
-def TokenHasExpired(chat_token: string): bool
+def TokenHasExpired(): bool
+  return localtime() > TokenExpiryEpoch(g:copilot_chat_token)
+enddef
+
+def TokenExpiryEpoch(chat_token: string): number
   var expiry_epoch = split(split(chat_token, ';')[1], '=')[1]
-  return localtime() > str2nr(expiry_epoch)
+  return str2nr(expiry_epoch)
+enddef
+
+def ScheduleTokenRefresh(): void
+  var expiry_epoch = TokenExpiryEpoch(g:copilot_chat_token)
+  var margin = 60
+  var delay_ms = (expiry_epoch - localtime() - margin) * 1000
+  timer_start(delay_ms, (_) => GetAccessToken())
 enddef
 
 export def GetTokens()
   if filereadable(chat_token_file)
     g:copilot_chat_token = join(readfile(chat_token_file), "\n")
-    if TokenHasExpired(g:copilot_chat_token)
+    if TokenHasExpired()
       GetAccessToken()
     else
+      ScheduleTokenRefresh()
       api.FetchModels()
     endif
   else
@@ -75,6 +87,7 @@ def HandleGetTokenExit(lines: list<string>, status: number)
     var chat_token = json_response.token
     writefile([chat_token], chat_token_file)
     g:copilot_chat_token = chat_token
+    ScheduleTokenRefresh()
     api.FetchModels()
   endif
 enddef
