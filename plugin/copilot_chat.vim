@@ -42,6 +42,7 @@ command! -nargs=0 CopilotChatList history.List()
 command! -nargs=0 CopilotChatReset copilot.ResetChat()
 command! -nargs=? CopilotChatSetActive _buffer.SetActive(<q-args>)
 command! -nargs=0 CopilotChatToggle _buffer.ToggleActiveChat()
+command! -nargs=0 CopilotChatUsage api.GetUsage()
 
 vnoremap <silent> <Plug>CopilotChatAddSelection :<C-u>call copilot_chat#buffer#AddSelection()<CR>
 

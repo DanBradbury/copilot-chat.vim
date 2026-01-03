@@ -87,6 +87,7 @@ filetype plugin indent on
 | `:CopilotChatLoad <name>?` | Load chat history (shows list of saved histories if no name provided) |
 | `:CopilotChatList` | List all saved chat histories |
 | `:CopilotChatSetActive <bufnr>?` | Sets the active chat window to the buffer number provided (default is the current buffer) |
+| `:CopilotChatUsage` | Show Copilot usage stats |
 
 ## Plugin Keys
 | Key | Description |
@@ -237,7 +238,7 @@ let g:copilot_chat_file_cache_timeout = 10
 ## Problems
 
 The following error message means the logged in account does not
-have CoPilot activated:
+have Copilot activated:
 
 > Resource not accessible by integration
 

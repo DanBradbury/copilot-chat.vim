@@ -5,6 +5,53 @@ import autoload 'copilot_chat/auth.vim' as auth
 import autoload 'copilot_chat/buffer.vim' as _buffer
 import autoload 'copilot_chat/models.vim' as models
 
+def UserStatsClose(winid: number, key: string): number
+  if key ==? "\<Esc>" || key ==? 'q'
+    popup_close(winid)
+    return 1
+  endif
+
+  return 1
+enddef
+
+export def GetUsage()
+  var device_token_file: string = $'{g:copilot_chat_data_dir}/.device_token'
+  var bearer_token = join(readfile(device_token_file), "\n")
+  var token_headers = [
+    'Accept: application/json',
+    'Accept-Encoding: gzip,deflate,br',
+    'Content-Type: application/json',
+    $'Authorization: token {bearer_token}'
+  ]
+
+  var command = HttpCommand('GET', 'https://api.github.com/copilot_internal/user', token_headers, {})
+  var output = system(command)
+  var response = json_decode(output)
+  var display_items = []
+  display_items->add('Copilot Plan: ' .. response['copilot_plan'])
+  display_items->add('Chat messages: ' .. response['quota_snapshots']['chat']['unlimited'])
+
+  var premium_interactions = response['quota_snapshots']['premium_interactions']
+  var total_count = premium_interactions['entitlement']
+  var used_count = total_count - premium_interactions['remaining']
+  display_items->add('Premium Requests Used: ' .. used_count .. ' / ' .. total_count)
+  display_items->add('Quota resets at: ' .. response['quota_reset_date'])
+
+  var options = {
+    'border': [1, 1, 1, 1],
+    'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
+    'borderhighlight': ['DiffAdd'],
+    'highlight': 'PopupNormal',
+    'padding': [1, 1, 1, 1],
+    'pos': 'center',
+    'minwidth': 50,
+    'title': 'Copilot User Info',
+    'filter': UserStatsClose,
+    'close': 'button'
+  }
+  popup_create(display_items, options)
+enddef
+
 var curl_output: list<string> = []
 
 export def AsyncRequest(messages: list<any>, file_list: list<any>): job
