@@ -25,31 +25,41 @@ export def GetUsage()
   ]
 
   var command = HttpCommand('GET', 'https://api.github.com/copilot_internal/user', token_headers, {})
-  var output = system(command)
-  var response = json_decode(output)
-  var display_items = []
-  display_items->add('Copilot Plan: ' .. response['copilot_plan'])
-  display_items->add('Chat messages: ' .. response['quota_snapshots']['chat']['unlimited'])
+  var output = []
+  job_start(command, {
+    'out_cb': (channel, msg) => output->add(msg),
+    'exit_cb': (job, status) => HandleUserUsageExit(output, status)
+  })
+enddef
 
-  var premium_interactions = response['quota_snapshots']['premium_interactions']
-  var total_count = premium_interactions['entitlement']
-  var used_count = total_count - premium_interactions['remaining']
-  display_items->add('Premium Requests Used: ' .. used_count .. ' / ' .. total_count)
-  display_items->add('Quota resets at: ' .. response['quota_reset_date'])
+def HandleUserUsageExit(output: list<string>, status: number)
+  if status == 0
+    var raw_response = join(output, '')
+    var response = json_decode(raw_response)
+    var display_items = []
+    display_items->add('Copilot Plan: ' .. response['copilot_plan'])
+    display_items->add('Chat messages: ' .. response['quota_snapshots']['chat']['unlimited'])
 
-  var options = {
-    'border': [1, 1, 1, 1],
-    'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
-    'borderhighlight': ['DiffAdd'],
-    'highlight': 'PopupNormal',
-    'padding': [1, 1, 1, 1],
-    'pos': 'center',
-    'minwidth': 50,
-    'title': 'Copilot User Info',
-    'filter': UserStatsClose,
-    'close': 'button'
-  }
-  popup_create(display_items, options)
+    var premium_interactions = response['quota_snapshots']['premium_interactions']
+    var total_count = premium_interactions['entitlement']
+    var used_count = total_count - premium_interactions['remaining']
+    display_items->add('Premium Requests Used: ' .. used_count .. ' / ' .. total_count)
+    display_items->add('Quota resets at: ' .. response['quota_reset_date'])
+
+    var options = {
+      'border': [1, 1, 1, 1],
+      'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
+      'borderhighlight': ['DiffAdd'],
+      'highlight': 'PopupNormal',
+      'padding': [1, 1, 1, 1],
+      'pos': 'center',
+      'minwidth': 50,
+      'title': 'Copilot User Info',
+      'filter': UserStatsClose,
+      'close': 'button'
+    }
+    popup_create(display_items, options)
+  endif
 enddef
 
 var curl_output: list<string> = []
