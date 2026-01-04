@@ -198,7 +198,8 @@ export def FetchModels()
   var chat_headers = [
     $'Authorization: Bearer {g:copilot_chat_token}',
     'Editor-Version: vscode/1.107.0',
-    'Editor-Plugin-Version: copilot-chat/0.36.2025121601'
+    'Editor-Plugin-Version: copilot-chat/0.36.2025121601',
+    'x-github-api-version: 2025-10-01'
   ]
 
   var command = HttpCommand('GET', 'https://api.githubcopilot.com/models', chat_headers, {})
@@ -213,13 +214,16 @@ def HandleFetchModelsExit(output: list<string>, status: number)
   if status == 0
     var response = join(output, '')
     var model_list = []
+    var model_multipliers = {}
     var json_response = json_decode(response)
     for item in json_response.data
       if has_key(item, 'id')
-        add(model_list, item.id)
+        model_list->add(item.id)
+        model_multipliers[item.id] = item.billing.multiplier
       endif
     endfor
     g:copilot_chat_available_models = model_list
+    g:copilot_chat_model_multipliers = model_multipliers
   else
     auth.GetTokens()
   endif

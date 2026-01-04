@@ -27,6 +27,7 @@ g:copilot_chat_file_cache_timeout = get(g:, 'copilot_chat_file_cache_timeout', 5
 g:copilot_chat_token = ''
 g:copilot_chat_device_token = {}
 g:copilot_chat_available_models = []
+g:copilot_chat_model_multipliers = {}
 
 auth.VerifySignin()
 
