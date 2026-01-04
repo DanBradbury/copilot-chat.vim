@@ -3,6 +3,7 @@ Execute:
 
   let g:copilot_chat_test_mode = 1
   let g:copilot_chat_available_models = ['gpt4']
+  let g:copilot_chat_model_multipliers = {'gpt4': '1'}
   let pos = getpos('.')
   AssertEqual pos[1], 1
   AssertEqual pos[2], 1
