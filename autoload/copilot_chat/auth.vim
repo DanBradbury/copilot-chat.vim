@@ -82,14 +82,16 @@ def GetAccessToken()
 enddef
 
 def HandleGetTokenExit(lines: list<string>, status: number)
-  if status == 0
+  try
     var json_response = json_decode(join(lines, ''))
     var chat_token = json_response.token
     writefile([chat_token], chat_token_file)
     g:copilot_chat_token = chat_token
     ScheduleTokenRefresh()
     api.FetchModels()
-  endif
+  catch
+    # get token failed
+  endtry
 enddef
 
 def HandleDeviceToken(channel: any, response: any)

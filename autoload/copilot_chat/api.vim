@@ -212,18 +212,22 @@ enddef
 
 def HandleFetchModelsExit(output: list<string>, status: number)
   if status == 0
-    var response = join(output, '')
-    var model_list = []
-    var model_multipliers = {}
-    var json_response = json_decode(response)
-    for item in json_response.data
-      if has_key(item, 'id')
-        model_list->add(item.id)
-        model_multipliers[item.id] = item.billing.multiplier
-      endif
-    endfor
-    g:copilot_chat_available_models = model_list
-    g:copilot_chat_model_multipliers = model_multipliers
+    try
+      var response = join(output, '')
+      var model_list = []
+      var model_multipliers = {}
+      var json_response = json_decode(response)
+      for item in json_response.data
+        if has_key(item, 'id')
+          model_list->add(item.id)
+          model_multipliers[item.id] = item.billing.multiplier
+        endif
+      endfor
+      g:copilot_chat_available_models = model_list
+      g:copilot_chat_model_multipliers = model_multipliers
+    catch
+      # fetch models response failed
+    endtry
   else
     auth.GetTokens()
   endif
