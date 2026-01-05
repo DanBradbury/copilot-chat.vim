@@ -108,10 +108,10 @@ However, to easily work with the Copilot Chat plugin, the user might want to
 setup his own vim key mappings. See example configuration below:
 
 ```vim
-" Open a new Cpilot Chat window
+" Open a new Copilot Chat window
 nnoremap <leader>cc :CopilotChatOpen<CR>
 
-" Add visual selection to copilot window
+" Add visual selection to Copilot window
 vmap <leader>a <Plug>CopilotChatAddSelection
 ```
 ## Features
