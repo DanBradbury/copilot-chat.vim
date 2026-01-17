@@ -13,10 +13,10 @@ if exists('g:loaded_copilot_chat')
   finish
 endif
 g:loaded_copilot_chat = 1
-
 g:copilot_chat_prompts = {}
 g:copilot_chat_active_buffer = -1
-g:copilot_chat_data_dir = get(g:, 'copilot_chat_data_dir', expand('~/.vim/copilot-chat', 1))
+var vim_dir = expand(split(&rtp, ',')[0])
+g:copilot_chat_data_dir = get(g:, 'copilot_chat_data_dir', vim_dir .. '/copilot-chat')
 g:copilot_chat_zombie_buffer = -1
 g:copilot_reuse_active_chat = get(g:, 'copilot_reuse_active_chat', 0)
 g:copilot_chat_create_on_add_selection = get(g:, 'copilot_chat_create_on_add_selection', 1)
