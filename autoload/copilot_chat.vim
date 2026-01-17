@@ -77,8 +77,8 @@ export def SubmitMessage(): void
         if has_key(g:copilot_chat_prompts, text)
           lines[i] = g:copilot_chat_prompts[text]
         endif
-      elseif line =~? '^#file: '
-        var filename: string = matchstr(line, '^#file: \s*\zs.*\ze$')
+      elseif line =~? '^#file:'
+        var filename: string = matchstr(line, '^#file:\s*\zs.*\ze$')
         add(file_list, filename)
       endif
     endfor
