@@ -143,9 +143,13 @@ def OpenUrl(url: string)
 enddef
 
 def CopyToClipboard(text: string)
-  if has('clipboard')
-    @+ = text
-    @* = text
+  if has('clipboard') && has('clipboard_working')
+    try
+      @+ = text
+      @* = text
+    catch
+      echom 'Registers not available - text not copied'
+    endtry
   else
     if has('mac') || has('macunix')
       system('pbcopy', text)
@@ -154,7 +158,7 @@ def CopyToClipboard(text: string)
     elseif has('win32') || has('win64')
       system('clip.exe', text)
     else
-      echoerr 'Clipboard not available'
+      echom 'Clipboard not available - text not copied'
     endif
   endif
 enddef
