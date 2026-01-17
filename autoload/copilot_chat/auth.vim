@@ -19,8 +19,12 @@ def TokenHasExpired(): bool
 enddef
 
 def TokenExpiryEpoch(chat_token: string): number
-  var expiry_epoch = split(split(chat_token, ';')[1], '=')[1]
-  return str2nr(expiry_epoch)
+  try
+    var expiry_epoch = split(split(chat_token, ';')[1], '=')[1]
+    return str2nr(expiry_epoch)
+  catch
+    return 0
+  endtry
 enddef
 
 def ScheduleTokenRefresh(): void
