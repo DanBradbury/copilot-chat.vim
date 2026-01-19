@@ -84,7 +84,29 @@ export def SubmitMessage(): void
     endfor
     var message: string = join(lines, "\n")
 
-    add(messages, {'content': message, 'role': role})
+    #add(messages, {'content': message, 'role': role})
+    var prepped_message: dict<any> = { 'role': role }
+    if role == 'user'
+      prepped_message['content'] = [
+        {
+          'type': 'input_text',
+          'text': '<prompt>' .. message .. '</prompt>'
+        }
+      ]
+    else
+      prepped_message['content'] = [
+        {
+          'type': 'output_text',
+          'text': message,
+          'annotations': []
+        }
+      ]
+      prepped_message['type'] = 'message'
+      prepped_message['status'] = 'completed'
+    endif
+
+    messages->add(prepped_message)
+
     add(all_file_lists, file_list)
     cursor(line('.'), col('.') + 1)
   endwhile

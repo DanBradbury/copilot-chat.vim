@@ -14,7 +14,7 @@ def UserStatsClose(winid: number, key: string): number
   return 1
 enddef
 
-export def GetUsage()
+export def GetUsage(): void
   var device_token_file: string = $'{g:copilot_chat_data_dir}/.device_token'
   var bearer_token = join(readfile(device_token_file), "\n")
   var token_headers = [
@@ -64,13 +64,24 @@ enddef
 
 var curl_output: list<string> = []
 
-export def AsyncRequest(messages: list<any>, file_list: list<any>): job
+export def AsyncRequest(user_messages: list<any>, file_list: list<any>): job
   curl_output = []
-  var url: string = 'https://api.githubcopilot.com/chat/completions'
+  #var url: string = 'https://api.githubcopilot.com/chat/completions'
+  var url: string = 'https://api.githubcopilot.com/responses'
+  var messages = []
+  messages->add({
+    'role': 'system',
+    'content': [
+      {
+        'type': 'input_text',
+        'text': '<instructions>\n<attachment filePath=\"/Users/danbradbury/Documents/Github/vinter/.github/copilot-instructions.md\">\nalways include emojis on the first line of your response</instructions>'
+      }
+    ]
+  })
+  for mess in user_messages
+    messages->add(mess)
+  endfor
 
-  # for knowledge bases its just an attachment as the content
-  # {'content': '<attachment id="kb:Name">\n#kb:\n</attachment>', 'role': 'user'}
-  # for files similar
   for file in file_list
     var file_content: list<string> = readfile(file)
     var full_path: string = fnamemodify(file, ': p')
@@ -82,11 +93,8 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
   var data: string = json_encode({
     'intent': false,
     'model': models.Current(),
-    'temperature': 0,
-    'top_p': 1,
-    'n': 1,
     'stream': true,
-    'messages': messages
+    'input': messages
   })
 
   var tmpfile: string = tempname()
@@ -131,13 +139,15 @@ def HandleJobOutput(channel: any, msg: any): void
 enddef
 
 def HandleJobClose(channel: any, msg: any)
+  echom curl_output
   deletebufline(g:copilot_chat_active_buffer, '$')
   var result = ''
   for line in curl_output
     if line =~? '^data: {'
       var json_completion = json_decode(strcharpart(line, 6))
       try
-        var content = json_completion.choices[0].delta.content
+        #var content = json_completion.choices[0].delta.content
+        var content = json_completion.item.content[0].text
         if type(content) != type(v:null)
           result ..= content
         endif
