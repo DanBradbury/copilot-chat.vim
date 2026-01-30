@@ -80,21 +80,11 @@ export def FocusActiveChat(): void
     return
   endif
 
-  if current_buf == g:copilot_chat_active_buffer
+  var copilot_chat_winnr_in_current_tab = bufwinnr(g:copilot_chat_active_buffer)
+  if copilot_chat_winnr_in_current_tab != -1
+    win_gotoid(win_getid(copilot_chat_winnr_in_current_tab))
     return
   endif
-  var windows = getwininfo()
-  for win in range(len(windows))
-    var win_info = windows[win]
-    if win_info.bufnr != g:copilot_chat_active_buffer ||
-	     (win_info.height == 0 && win_info.width == 0)
-      continue
-    endif
-    # We found an active chat buffer in the current window display, so
-    # switch to it.
-    win_gotoid(win_getid(win_info.winnr))
-    return
-  endfor
 
   # Not found in current visible windows, so create a new split
   WindowSplit()
