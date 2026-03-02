@@ -118,8 +118,13 @@ export def Get(): list<string>
 enddef
 
 export def Complete(arg_lead: string, cmd_line: any, cursor_pos: number): list<string>
-  #return matchfuzzy(Get(), arg_lead)
-  return matchfuzzy(copilot_chat#history#get(), arg_lead)
+  var chats = copilot_chat#history#Get()
+
+  if empty(arg_lead)
+    return chats
+  endif
+
+  return matchfuzzy(chats, arg_lead)
 enddef
 
 export def List(): void
