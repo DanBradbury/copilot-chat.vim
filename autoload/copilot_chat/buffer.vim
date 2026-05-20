@@ -54,6 +54,7 @@ export def Create(): void
   # Save buffer number for reference
   g:copilot_chat_active_buffer = bufnr('%')
   b:added_syntaxes = []
+  b:defined_code_regions = []
   WelcomeMessage()
 enddef
 
@@ -280,6 +281,12 @@ enddef
 def ApplyCodeBlockSyntaxImpl(opt: any): void
   syntax_timer = -1
 
+  # Clear all previously defined CopilotCode_* regions to prevent accumulation
+  for region_name in b:defined_code_regions
+    execute 'syntax clear ' .. region_name
+  endfor
+  b:defined_code_regions = []
+
   var lines: list<string> = getline(1, '$')
   var in_code_block: bool = false
   var current_lang: string = ''
@@ -335,6 +342,7 @@ def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, b
     cmd ..= ' end=/\%' .. (end_line + 1) .. 'l/'
     cmd ..= ' contains=@' .. lang
     execute cmd
+    add(b:defined_code_regions, $'CopilotCode_{lang}_{block_id}')
   endif
 enddef
 
