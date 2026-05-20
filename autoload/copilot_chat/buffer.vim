@@ -313,7 +313,6 @@ def ApplyCodeBlockSyntaxImpl(opt: any): void
       current_lang = ''
     endif
   endfor
-  redraw
 enddef
 
 def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, block_id: number): void
