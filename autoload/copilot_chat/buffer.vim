@@ -54,6 +54,7 @@ export def Create(): void
   # Save buffer number for reference
   g:copilot_chat_active_buffer = bufnr('%')
   b:added_syntaxes = []
+  b:defined_code_regions = {}
   WelcomeMessage()
 enddef
 
@@ -277,6 +278,17 @@ export def ApplyCodeBlockSyntax(): void
   syntax_timer = timer_start(g:copilot_chat_syntax_debounce_ms, function('ApplyCodeBlockSyntaxImpl'))
 enddef
 
+def NormalizeLang(lang_arg: string): string
+  if lang_arg ==# 'js'
+    return 'javascript'
+  elseif lang_arg ==# 'ts'
+    return 'typescript'
+  elseif lang_arg ==# 'py'
+    return 'python'
+  endif
+  return lang_arg
+enddef
+
 def ApplyCodeBlockSyntaxImpl(opt: any): void
   syntax_timer = -1
 
@@ -285,6 +297,7 @@ def ApplyCodeBlockSyntaxImpl(opt: any): void
   var current_lang: string = ''
   var start_line: number = 0
   var block_count: number = 0
+  var new_regions: dict<string> = {}  # region_name -> "start:end"
 
   for linenum in range(len(lines))
     var line: string = lines[linenum]
@@ -298,7 +311,12 @@ def ApplyCodeBlockSyntaxImpl(opt: any): void
       var end_line: number = linenum
 
       if start_line < end_line
-        HighlightCodeBlock(start_line, end_line, current_lang, block_count)
+        var norm_lang: string = NormalizeLang(current_lang)
+        var syntax_file: string = findfile('syntax/' .. norm_lang .. '.vim', &runtimepath)
+        if !syntax_file->empty()
+          var region_name: string = $'CopilotCode_{norm_lang}_{block_count}'
+          new_regions[region_name] = $'{start_line}:{end_line}'
+        endif
         block_count += 1
       endif
 
@@ -306,35 +324,36 @@ def ApplyCodeBlockSyntaxImpl(opt: any): void
       current_lang = ''
     endif
   endfor
-  redraw
+
+  # Clear regions that were removed or whose line bounds changed
+  for [region_name, old_desc] in items(b:defined_code_regions)
+    if !has_key(new_regions, region_name) || new_regions[region_name] != old_desc
+      execute 'syntax clear ' .. region_name
+    endif
+  endfor
+
+  # Define only regions that are new or whose line bounds changed
+  for [region_name, descriptor] in items(new_regions)
+    if !has_key(b:defined_code_regions, region_name) || b:defined_code_regions[region_name] != descriptor
+      var lang: string = matchstr(region_name, '^CopilotCode_\zs.\+\ze_\d\+$')
+      EnsureSyntaxIncluded(lang)
+      var parts: list<string> = split(descriptor, ':')
+      var s: number = str2nr(parts[0])
+      var e: number = str2nr(parts[1])
+      execute $'syntax region {region_name} start=/\%{s + 1}l/ end=/\%{e + 1}l/ contains=@{lang}'
+    endif
+  endfor
+
+  b:defined_code_regions = new_regions
 enddef
 
-def HighlightCodeBlock(start_line: number, end_line: number, lang_arg: string, block_id: number): void
-  var lang: string = lang_arg
-  if lang ==# 'js'
-    lang = 'javascript'
-  elseif lang ==# 'ts'
-    lang = 'typescript'
-  elseif lang ==# 'py'
-    lang = 'python'
-  endif
-
-  var syntax_file: string = findfile('syntax/' .. lang .. '.vim', &runtimepath)
-  if !syntax_file->empty()
-    if index(b:added_syntaxes, '@' .. lang) == -1
-      if exists('b:current_syntax')
-        unlet b:current_syntax
-      endif
-      execute $'syntax include @{lang} syntax/{lang}.vim'
-
-      add(b:added_syntaxes, '@' .. lang)
+def EnsureSyntaxIncluded(lang: string): void
+  if index(b:added_syntaxes, '@' .. lang) == -1
+    if exists('b:current_syntax')
+      unlet b:current_syntax
     endif
-    # Define syntax region for this specific code block
-    var cmd: string = $'syntax region CopilotCode_{lang}_{block_id}'
-    cmd ..= ' start=/\%' .. (start_line + 1) .. 'l/'
-    cmd ..= ' end=/\%' .. (end_line + 1) .. 'l/'
-    cmd ..= ' contains=@' .. lang
-    execute cmd
+    execute $'syntax include @{lang} syntax/{lang}.vim'
+    add(b:added_syntaxes, '@' .. lang)
   endif
 enddef
 
