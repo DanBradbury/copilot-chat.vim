@@ -94,6 +94,8 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
 
   var curl_cmd: list<string> = [
     'curl',
+    '-N',
+    '--ssl-no-revoke',
     '-s',
     '-X',
     'POST',
@@ -133,17 +135,22 @@ enddef
 def HandleJobClose(channel: any, msg: any)
   deletebufline(g:copilot_chat_active_buffer, '$')
   var result = ''
+
   for line in curl_output
     if line =~? '^data: {'
       var json_completion = json_decode(strcharpart(line, 6))
-      try
+
+      if has_key(json_completion, 'choices')
+        && len(json_completion.choices) > 0
+        && has_key(json_completion.choices[0], 'delta')
+        && has_key(json_completion.choices[0].delta, 'content')
+
         var content = json_completion.choices[0].delta.content
         if type(content) != type(v:null)
           result ..= content
         endif
-      catch
-        result ..= "\n"
-      endtry
+      endif
+
     elseif line =~? 'error'
       result ..= line
     endif
