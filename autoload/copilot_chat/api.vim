@@ -144,6 +144,7 @@ def HandleJobClose(channel: any, msg: any)
           result ..= content
         endif
       catch
+        echom v:exception
         result ..= "\n"
       endtry
     elseif line =~? 'error'
