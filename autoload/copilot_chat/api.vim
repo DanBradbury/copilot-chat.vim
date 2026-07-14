@@ -94,6 +94,8 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
 
   var curl_cmd: list<string> = [
     'curl',
+    '-N',
+    '--ssl-no-revoke',
     '-s',
     '-X',
     'POST',
