@@ -139,9 +139,18 @@ def HandleJobClose(channel: any, msg: any)
     if line =~? '^data: {'
       var json_completion = json_decode(strcharpart(line, 6))
       try
-        var content = json_completion.choices[0].delta.content
-        if type(content) != type(v:null)
-          result ..= content
+
+        if has_key(json_completion, 'choices')
+            && len(json_completion.choices) > 0
+            && has_key(json_completion.choices[0], 'delta')
+            && has_key(json_completion.choices[0].delta, 'content')
+
+          var content = json_completion.choices[0].delta.content
+          if type(content) != type(v:null)
+            result ..= content
+          endif
+        else
+          result ..= string(json_completion)
         endif
       catch
         echom v:exception
