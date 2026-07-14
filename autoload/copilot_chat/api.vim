@@ -135,27 +135,22 @@ enddef
 def HandleJobClose(channel: any, msg: any)
   deletebufline(g:copilot_chat_active_buffer, '$')
   var result = ''
+
   for line in curl_output
     if line =~? '^data: {'
       var json_completion = json_decode(strcharpart(line, 6))
-      try
 
-        if has_key(json_completion, 'choices')
-            && len(json_completion.choices) > 0
-            && has_key(json_completion.choices[0], 'delta')
-            && has_key(json_completion.choices[0].delta, 'content')
+      if has_key(json_completion, 'choices')
+        && len(json_completion.choices) > 0
+        && has_key(json_completion.choices[0], 'delta')
+        && has_key(json_completion.choices[0].delta, 'content')
 
-          var content = json_completion.choices[0].delta.content
-          if type(content) != type(v:null)
-            result ..= content
-          endif
-        else
-          result ..= string(json_completion)
+        var content = json_completion.choices[0].delta.content
+        if type(content) != type(v:null)
+          result ..= content
         endif
-      catch
-        echom v:exception
-        result ..= "\n"
-      endtry
+      endif
+
     elseif line =~? 'error'
       result ..= line
     endif
