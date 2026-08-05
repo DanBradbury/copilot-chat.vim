@@ -28,6 +28,7 @@ g:copilot_chat_token = ''
 g:copilot_chat_device_token = {}
 g:copilot_chat_available_models = []
 g:copilot_chat_model_multipliers = {}
+g:copilot_chat_model_endpoints = {}
 
 auth.VerifySignin()
 
