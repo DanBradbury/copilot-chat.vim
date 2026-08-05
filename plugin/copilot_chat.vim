@@ -28,6 +28,11 @@ g:copilot_chat_token = ''
 g:copilot_chat_device_token = {}
 g:copilot_chat_available_models = []
 g:copilot_chat_model_multipliers = {}
+g:copilot_chat_model_endpoints = {}
+# Premium requests consumed since Vim started: every request adds the
+# multiplier of the model it was sent to.
+g:copilot_chat_session_aic = 0.0
+g:copilot_chat_disable_statusline = get(g:, 'copilot_chat_disable_statusline', 0)
 
 auth.VerifySignin()
 

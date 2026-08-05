@@ -2,6 +2,7 @@ vim9script
 scriptencoding utf-8
 
 import autoload 'copilot_chat/config.vim' as config
+import autoload 'copilot_chat/models.vim' as models
 
 var colors_gui: list<string> = ['#33FF33', '#4DFF33', '#66FF33', '#80FF33', '#99FF33', '#B3FF33', '#CCFF33', '#E6FF33', '#FFFF33']
 var colors_cterm: list<number> = [46, 118, 154, 190, 226, 227, 228, 229, 230]
@@ -15,6 +16,7 @@ var file_list_cache_time: number = 0
 var copilot_list_chat_buffer: number = get(g:, 'copilot_list_chat_buffer', 0)
 var copilot_chat_open_on_toggle: number = get(g:, 'copilot_chat_open_on_toggle', 1)
 var waiting_timer: number = 0
+var chat_winid: number = -1
 
 def WindowSplit(): void
   var position: string = config.GetValue('window_position', 'right')
@@ -53,8 +55,35 @@ export def Create(): void
 
   # Save buffer number for reference
   g:copilot_chat_active_buffer = bufnr('%')
+  chat_winid = win_getid()
   b:added_syntaxes = []
   WelcomeMessage()
+  UpdateStatusLine()
+enddef
+
+# Refresh the chat window statusline. Called when the model changes and when a
+# request is sent, since those are the only things it displays.
+export def UpdateStatusLine(): void
+  if get(g:, 'copilot_chat_disable_statusline', 0)
+    return
+  endif
+
+  # 'statusline' is window-local, so only touch the tracked chat window and
+  # only while it still shows the chat buffer.
+  if chat_winid == -1 || g:copilot_chat_active_buffer == -1
+      || winbufnr(chat_winid) != g:copilot_chat_active_buffer
+    return
+  endif
+
+  var raw: any = get(g:, 'copilot_chat_session_aic', 0.0)
+  var credits: float = type(raw) == v:t_float ? raw : str2float(string(raw))
+  var used: string = credits == round(credits)
+    ? printf('%d', float2nr(credits))
+    : printf('%.2f', credits)
+
+  setwinvar(chat_winid, '&statusline',
+    $' Copilot │ {models.Current()} │ AIC {used} %=%l/%L ')
+  silent! redrawstatus!
 enddef
 
 export def HasActiveChat(): bool
@@ -81,6 +110,7 @@ export def FocusActiveChat(): void
   endif
 
   if current_buf == g:copilot_chat_active_buffer
+    chat_winid = win_getid()
     return
   endif
   var windows = getwininfo()
@@ -93,12 +123,16 @@ export def FocusActiveChat(): void
     # We found an active chat buffer in the current window display, so
     # switch to it.
     win_gotoid(win_getid(win_info.winnr))
+    chat_winid = win_getid()
+    UpdateStatusLine()
     return
   endfor
 
   # Not found in current visible windows, so create a new split
   WindowSplit()
   execute 'buffer ' .. g:copilot_chat_active_buffer
+  chat_winid = win_getid()
+  UpdateStatusLine()
 enddef
 
 export def ToggleActiveChat(): void
@@ -239,6 +273,7 @@ export def OnDelete(bufnr_string: string): void
   # Unset the active chat buffer
   g:copilot_chat_zombie_buffer = g:copilot_chat_active_buffer
   g:copilot_chat_active_buffer = -1
+  chat_winid = -1
 enddef
 
 export def Resize(): void

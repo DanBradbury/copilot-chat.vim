@@ -66,7 +66,6 @@ var curl_output: list<string> = []
 
 export def AsyncRequest(messages: list<any>, file_list: list<any>): job
   curl_output = []
-  var url: string = 'https://api.githubcopilot.com/chat/completions'
 
   # for knowledge bases its just an attachment as the content
   # {'content': '<attachment id="kb:Name">\n#kb:\n</attachment>', 'role': 'user'}
@@ -79,21 +78,43 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
     add(messages, {'content': attachment_content, 'role': 'user'})
   endfor
 
-  var data: string = json_encode({
-    'intent': false,
-    'model': models.Current(),
-    'temperature': 0,
-    'top_p': 1,
-    'n': 1,
-    'stream': true,
-    'messages': messages
-  })
+  var model: string = models.Resolve()
+  var endpoint: string = models.Endpoint(model)
+  var url: string = 'https://api.githubcopilot.com' .. endpoint
+  var data: string
+
+  # Each interaction bills the model's multiplier against the premium request
+  # quota, so track the running cost for the statusline.
+  g:copilot_chat_session_aic = g:copilot_chat_session_aic + models.Multiplier(model)
+  _buffer.UpdateStatusLine()
+
+  if endpoint ==# '/responses'
+    # The /responses API takes the conversation as 'input' and rejects the
+    # sampling options accepted by /chat/completions.
+    data = json_encode({
+      'model': model,
+      'input': messages,
+      'stream': true
+    })
+  else
+    data = json_encode({
+      'intent': false,
+      'model': model,
+      'temperature': 0,
+      'top_p': 1,
+      'n': 1,
+      'stream': true,
+      'messages': messages
+    })
+  endif
 
   var tmpfile: string = tempname()
   writefile([data], tmpfile)
 
   var curl_cmd: list<string> = [
     'curl',
+    '-N',
+    '--ssl-no-revoke',
     '-s',
     '-X',
     'POST',
@@ -133,17 +154,39 @@ enddef
 def HandleJobClose(channel: any, msg: any)
   deletebufline(g:copilot_chat_active_buffer, '$')
   var result = ''
+
   for line in curl_output
     if line =~? '^data: {'
-      var json_completion = json_decode(strcharpart(line, 6))
+      var payload: any
       try
-        var content = json_completion.choices[0].delta.content
+        payload = json_decode(strcharpart(line, 6))
+      catch
+        continue
+      endtry
+
+      if type(payload) != v:t_dict
+        continue
+      endif
+
+      # /chat/completions streams choices[].delta.content
+      if has_key(payload, 'choices')
+        && len(payload.choices) > 0
+        && has_key(payload.choices[0], 'delta')
+        && has_key(payload.choices[0].delta, 'content')
+
+        var content = payload.choices[0].delta.content
         if type(content) != type(v:null)
           result ..= content
         endif
-      catch
-        result ..= "\n"
-      endtry
+
+      # /responses streams response.output_text.delta events
+      elseif get(payload, 'type', '') ==# 'response.output_text.delta'
+        var delta = get(payload, 'delta', '')
+        if type(delta) == v:t_string
+          result ..= delta
+        endif
+      endif
+
     elseif line =~? 'error'
       result ..= line
     endif
@@ -211,64 +254,86 @@ export def FetchModels()
 enddef
 
 def HandleFetchModelsExit(output: list<string>, status: number)
-  if status == 0
-    try
-      var response = join(output, '')
-      var model_list = []
-      var model_multipliers = {}
-      var json_response = json_decode(response)
-      for item in json_response.data
-        if has_key(item, 'id')
-          model_list->add(item.id)
-          model_multipliers[item.id] = item.billing.multiplier
-        endif
-      endfor
-      g:copilot_chat_available_models = model_list
-      g:copilot_chat_model_multipliers = model_multipliers
-    catch
-      # fetch models response failed
-    endtry
-  else
+  if status != 0
+    g:copilot_chat_available_models = []
+    g:copilot_chat_model_multipliers = {}
+    g:copilot_chat_model_endpoints = {}
     auth.GetTokens()
+    return
   endif
+
+  try
+    var response = join(output, '')
+    var model_list: list<string> = []
+    var model_multipliers: dict<any> = {}
+    var model_endpoints: dict<any> = {}
+    var json_response = json_decode(response)
+    var items: list<any> = []
+
+    if type(json_response) == v:t_dict && has_key(json_response, 'data')
+      items = json_response.data
+    elseif type(json_response) == v:t_list
+      items = json_response
+    endif
+
+    for item in items
+      if type(item) != v:t_dict || !has_key(item, 'id')
+        continue
+      endif
+
+      if get(item, 'model_picker_enabled', true) == false
+        continue
+      endif
+
+      # Keep models served by an endpoint we know how to drive
+      var endpoints: list<any> = get(item, 'supported_endpoints', [])
+      if !empty(endpoints)
+          && index(endpoints, '/chat/completions') == -1
+          && index(endpoints, '/responses') == -1
+        continue
+      endif
+
+      model_list->add(item.id)
+      model_multipliers[item.id] = get(get(item, 'billing', {}), 'multiplier', 1)
+      model_endpoints[item.id] = endpoints
+    endfor
+
+    g:copilot_chat_available_models = model_list
+    g:copilot_chat_model_multipliers = model_multipliers
+    g:copilot_chat_model_endpoints = model_endpoints
+    if empty(model_list)
+      echom 'No Copilot models returned from the API'
+    endif
+  catch
+    g:copilot_chat_available_models = []
+    g:copilot_chat_model_multipliers = {}
+    g:copilot_chat_model_endpoints = {}
+    echom 'Failed to load Copilot models'
+  endtry
 enddef
 
 export def HttpCommand(method: string, url: string, headers: list<any>, body: any): any
+  # curl is already required for the streaming chat request, so use it on every
+  # platform: spawning PowerShell/Invoke-WebRequest costs several seconds and
+  # mangles header values that contain '=' or ';'.
+  var command: list<string> = ['curl', '-s', '-X', method, '--compressed']
+
   if has('win32')
-    var command = ''
-    command ..= 'powershell -Command "'
-    command ..= '$headers = @{'
-    for header in headers
-      var parts = split(header, ': ')
-      var key = parts[0]
-      var value = parts[1]
-      command ..= "'" .. key .. "'='" .. value .. "';"
-    endfor
-    command ..= '};'
-    if method !=# 'GET'
-      command ..= '$body = ConvertTo-Json @{'
-      for obj in keys(body)
-        command ..= obj .. "='" .. body[obj] .. "';"
-      endfor
-      command ..= '};'
-    endif
-    command ..= "Invoke-WebRequest -Uri '" .. url .. "' -Method " .. method .. " -Headers $headers -Body $body -ContentType 'application/json' -UseBasicParsing | Select-Object -ExpandProperty Content"
-    command ..= '"'
-    return command
-  else
-    var command = ['curl', '-s', '-X', method, '--compressed']
-    for header in headers
-      command->add('-H')
-      command->add(header)
-    endfor
-
-    if method !=# 'GET'
-      var token_data = json_encode(body)
-      command->add('-d')
-      command->add(token_data)
-    endif
-    command->add(url)
-
-    return command
+    # Schannel cannot always reach the CRL distribution point
+    command->add('--ssl-no-revoke')
   endif
+
+  for header in headers
+    command->add('-H')
+    command->add(header)
+  endfor
+
+  if method !=# 'GET'
+    command->add('-d')
+    command->add(json_encode(body))
+  endif
+
+  command->add(url)
+
+  return command
 enddef
