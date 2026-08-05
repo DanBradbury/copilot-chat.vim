@@ -308,41 +308,27 @@ def HandleFetchModelsExit(output: list<string>, status: number)
 enddef
 
 export def HttpCommand(method: string, url: string, headers: list<any>, body: any): any
+  # curl is already required for the streaming chat request, so use it on every
+  # platform: spawning PowerShell/Invoke-WebRequest costs several seconds and
+  # mangles header values that contain '=' or ';'.
+  var command: list<string> = ['curl', '-s', '-X', method, '--compressed']
+
   if has('win32')
-    var command = ''
-    command ..= 'powershell -Command "'
-    command ..= '$headers = @{'
-    for header in headers
-      var parts = split(header, ': ')
-      var key = parts[0]
-      var value = parts[1]
-      command ..= "'" .. key .. "'='" .. value .. "';"
-    endfor
-    command ..= '};'
-    if method !=# 'GET'
-      command ..= '$body = ConvertTo-Json @{'
-      for obj in keys(body)
-        command ..= obj .. "='" .. body[obj] .. "';"
-      endfor
-      command ..= '};'
-    endif
-    command ..= "Invoke-WebRequest -Uri '" .. url .. "' -Method " .. method .. " -Headers $headers -Body $body -ContentType 'application/json' -UseBasicParsing | Select-Object -ExpandProperty Content"
-    command ..= '"'
-    return command
-  else
-    var command = ['curl', '-s', '-X', method, '--compressed']
-    for header in headers
-      command->add('-H')
-      command->add(header)
-    endfor
-
-    if method !=# 'GET'
-      var token_data = json_encode(body)
-      command->add('-d')
-      command->add(token_data)
-    endif
-    command->add(url)
-
-    return command
+    # Schannel cannot always reach the CRL distribution point
+    command->add('--ssl-no-revoke')
   endif
+
+  for header in headers
+    command->add('-H')
+    command->add(header)
+  endfor
+
+  if method !=# 'GET'
+    command->add('-d')
+    command->add(json_encode(body))
+  endif
+
+  command->add(url)
+
+  return command
 enddef
