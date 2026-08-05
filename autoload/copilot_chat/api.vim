@@ -83,6 +83,11 @@ export def AsyncRequest(messages: list<any>, file_list: list<any>): job
   var url: string = 'https://api.githubcopilot.com' .. endpoint
   var data: string
 
+  # Each interaction bills the model's multiplier against the premium request
+  # quota, so track the running cost for the statusline.
+  g:copilot_chat_session_aic = g:copilot_chat_session_aic + models.Multiplier(model)
+  _buffer.UpdateStatusLine()
+
   if endpoint ==# '/responses'
     # The /responses API takes the conversation as 'input' and rejects the
     # sampling options accepted by /chat/completions.

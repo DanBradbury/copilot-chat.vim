@@ -7,7 +7,7 @@ import autoload 'copilot_chat/config.vim' as config
 
 var popup_selection = 0
 var model_key: string = 'model'
-var default_model: string = 'gpt-5-mini'
+var default_model: string = 'gpt-5.6-luna'
 var model_load_timer: number = -1
 var model_load_attempts: number = 0
 var model_load_retry_limit: number = 60
@@ -29,6 +29,8 @@ export def FilterModels(winid: number, key: string): number
     config.SetValue(model_key, selected_model)
     echo selected_model .. ' set as active model'
     popup_close(winid)
+    # called by name to avoid an import cycle with buffer.vim
+    copilot_chat#buffer#UpdateStatusLine()
     return 1
   elseif key ==? "\<Esc>" || key ==? 'q'
     popup_close(winid)
@@ -128,6 +130,15 @@ export def Select(): void
   endif
 
   OpenPopup()
+enddef
+
+# Cost in premium requests of a single interaction with the given model.
+export def Multiplier(model: string): float
+  var value: any = get(g:copilot_chat_model_multipliers, model, 1)
+  if type(value) == v:t_float
+    return value
+  endif
+  return str2float(string(value))
 enddef
 
 export def Current(): string
