@@ -1,0 +1,17 @@
+Execute (Url defaults to github.com):
+  unlet! g:copilot_chat_enterprise_uri g:copilot_enterprise_uri
+  AssertEqual 'https://github.com', copilot_chat#config#Url('github')
+  AssertEqual 'https://api.github.com', copilot_chat#config#Url('github_api')
+  AssertEqual 'https://api.githubcopilot.com', copilot_chat#config#Url('copilot_api')
+
+Execute (Url uses g:copilot_chat_enterprise_uri):
+  let g:copilot_chat_enterprise_uri = 'https://octo.ghe.com'
+  AssertEqual 'https://octo.ghe.com', copilot_chat#config#Url('github')
+  AssertEqual 'https://api.octo.ghe.com', copilot_chat#config#Url('github_api')
+  AssertEqual 'https://copilot-api.octo.ghe.com', copilot_chat#config#Url('copilot_api')
+  unlet g:copilot_chat_enterprise_uri
+
+Execute (Url falls back to copilot.vim g:copilot_enterprise_uri):
+  let g:copilot_enterprise_uri = 'https://octo.ghe.com'
+  AssertEqual 'https://api.octo.ghe.com', copilot_chat#config#Url('github_api')
+  unlet g:copilot_enterprise_uri

@@ -4,6 +4,7 @@ scriptencoding utf-8
 import autoload 'copilot_chat/auth.vim' as auth
 import autoload 'copilot_chat/buffer.vim' as _buffer
 import autoload 'copilot_chat/models.vim' as models
+import autoload 'copilot_chat/config.vim' as config
 
 def UserStatsClose(winid: number, key: string): number
   if key ==? "\<Esc>" || key ==? 'q'
@@ -24,7 +25,7 @@ export def GetUsage()
     $'Authorization: token {bearer_token}'
   ]
 
-  var command = HttpCommand('GET', 'https://api.github.com/copilot_internal/user', token_headers, {})
+  var command = HttpCommand('GET', config.Url('github_api') .. '/copilot_internal/user', token_headers, {})
   var output = []
   job_start(command, {
     'out_cb': (channel, msg) => output->add(msg),
@@ -66,7 +67,7 @@ var curl_output: list<string> = []
 
 export def AsyncRequest(messages: list<any>, file_list: list<any>): job
   curl_output = []
-  var url: string = 'https://api.githubcopilot.com/chat/completions'
+  var url: string = config.Url('copilot_api') .. '/chat/completions'
 
   # for knowledge bases its just an attachment as the content
   # {'content': '<attachment id="kb:Name">\n#kb:\n</attachment>', 'role': 'user'}
@@ -202,7 +203,7 @@ export def FetchModels()
     'x-github-api-version: 2025-10-01'
   ]
 
-  var command = HttpCommand('GET', 'https://api.githubcopilot.com/models', chat_headers, {})
+  var command = HttpCommand('GET', config.Url('copilot_api') .. '/models', chat_headers, {})
   var output = []
   job_start(command, {
     'out_cb': (channel, msg) => output->add(msg),
