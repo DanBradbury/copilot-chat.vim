@@ -279,6 +279,20 @@ g:copilot_chat_data_dir                        *g:copilot_chat_data_dir*
 Set to the directory where the plugin stores its data. By default, this is
 `~/.vim/copilot-chat/`.
 
+g:copilot_chat_enterprise_uri                  *g:copilot_chat_enterprise_uri*
+
+Set to your GitHub Enterprise Cloud (GHE.com) URI to sign in and chat against
+your enterprise instead of github.com. Falls back to |g:copilot_enterprise_uri|
+from copilot.vim when unset.
+
+Example:
+>
+  let g:copilot_chat_enterprise_uri = 'https://DOMAIN.ghe.com'
+<
+
+After changing it, delete `.device_token` and `.chat_token` from
+|g:copilot_chat_data_dir| to sign in again.
+
 g:copilot_chat_open_on_toggle                  *g:copilot_chat_open_on_toggle*
 
 Set to 0 to prevent a new chat window from opening when toggling the chat

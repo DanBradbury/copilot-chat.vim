@@ -48,7 +48,7 @@ export def GetTokens()
     if filereadable(device_token_file)
       GetAccessToken()
     else
-      var token_url = 'https://github.com/login/device/code'
+      var token_url = config.Url('github') .. '/login/device/code'
       var headers = [
         'Accept: application/json',
         'Accept-Encoding: gzip, deflate, br',
@@ -66,7 +66,7 @@ enddef
 
 def GetAccessToken()
   var bearer_token = join(readfile(device_token_file), "\n")
-  var token_url = 'https://api.github.com/copilot_internal/v2/token'
+  var token_url = config.Url('github_api') .. '/copilot_internal/v2/token'
   var token_headers = [
     'Accept: application/json',
     'Accept-Encoding: gzip,deflate,br',
@@ -108,7 +108,7 @@ def HandleDeviceToken(channel: any, response: any)
   OpenUrl(verification_uri)
   input($"Please go to {verification_uri} and paste the code (added to your clipboard already): {user_code}\nPress Enter to continue when completed...\n")
 
-  var token_poll_url = 'https://github.com/login/oauth/access_token'
+  var token_poll_url = config.Url('github') .. '/login/oauth/access_token'
   var token_poll_data = {
     'client_id': 'Iv1.b507a08c87ecfe98',
     'device_code': device_code,

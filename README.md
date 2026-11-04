@@ -245,6 +245,7 @@ Customize behavior by setting global variables in your `.vimrc`:
 | `g:copilot_chat_jump_to_chat_on_add_selection` | `1` | Jump to chat window after adding selection |
 | `g:copilot_reuse_active_chat` | `1` | Reuse active chat window instead of creating new ones |
 | `g:copilot_chat_data_dir` | `~/.vim/copilot-chat/` | Directory for plugin data storage |
+| `g:copilot_chat_enterprise_uri` | `g:copilot_enterprise_uri` | GitHub Enterprise Cloud URI, e.g. `'https://DOMAIN.ghe.com'` |
 | `g:copilot_chat_open_on_toggle` | `1` | Set to `0` to prevent opening on toggle |
 | `g:copilot_list_chat_buffer` | `0` | Set to `1` to list copilot-chat buffers |
 | `g:copilot_chat_message_history_limit` | `20` | Maximum messages sent to API (lower = faster) |

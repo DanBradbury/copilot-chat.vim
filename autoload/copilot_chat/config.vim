@@ -23,6 +23,16 @@ def SaveConfigFile(): void
   writefile([json_encode(config)], chat_config_file)
 enddef
 
+# GitHub Enterprise Cloud (GHE.com) support. Falls back to copilot.vim's setting.
+# service: 'github' | 'github_api' | 'copilot_api'
+export def Url(service: string): string
+  var uri = get(g:, 'copilot_chat_enterprise_uri', get(g:, 'copilot_enterprise_uri', ''))
+  if empty(uri)
+    return {github: 'https://github.com', github_api: 'https://api.github.com', copilot_api: 'https://api.githubcopilot.com'}[service]
+  endif
+  return {github: uri, github_api: uri->substitute('://', '://api.', ''), copilot_api: uri->substitute('://', '://copilot-api.', '')}[service]
+enddef
+
 export def GetValue(key: string, default: any): any
   return get(config, key, default)
 enddef
